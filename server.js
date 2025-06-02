@@ -1,204 +1,321 @@
 // server.js
 const express = require('express');
 const http = require('http');
-const { Server } = require('socket.io');
-const cors = require('cors');
+const { Server } = require("socket.io");
 const path = require('path');
-const crypto = require('crypto');
-const app = express();
-
-const server = http.createServer(app);
-const io = new Server(server, {
-  cors: {
-    origin: '*',
-  }
-});
-
-// Middleware
-app.use(cors());
-app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
-
-// Simple root route
-app.get('/', (req, res) => {
-  res.send('MMORPG 2D Backend Server is running!');
-});
-
-const MAX_PLAYERS = 10;
-let players = {}; // { socketId: {x, y, ...} }
-
-io.on('connection', (socket) => {
-  if (Object.keys(players).length >= MAX_PLAYERS) {
-    socket.emit('server_full', { message: 'Servidor cheio. Tente novamente mais tarde.' });
-    socket.disconnect();
-    return;
-  }
-
-  // Novo player entra (aguarda primeiro movimento para registrar info real)
-  players[socket.id] = {
-    id: socket.id,
-    x: 0,
-    y: 0,
-    name: 'Outro',
-    color: '#00eaff',
-    mapId: 'mapa1',
-  };
-
-  // Enviar estado inicial
-  socket.emit('init', { id: socket.id, players });
-
-  // Informar outros jogadores
-  socket.broadcast.emit('player_joined', players[socket.id]);
-
-  // Recebe atualização de movimento e info
-  socket.on('move', (data) => {
-    if (players[socket.id]) {
-      players[socket.id].x = data.x;
-      players[socket.id].y = data.y;
-      players[socket.id].name = data.name || players[socket.id].name;
-      players[socket.id].color = data.color || players[socket.id].color;
-      players[socket.id].mapId = data.mapId || players[socket.id].mapId;
-      // Broadcast para os outros jogadores
-      socket.broadcast.emit('player_moved', { id: socket.id, x: data.x, y: data.y, name: players[socket.id].name, color: players[socket.id].color, mapId: players[socket.id].mapId });
-    }
-  });
-
-  // Desconexão
-  socket.on('disconnect', () => {
-    delete players[socket.id];
-    io.emit('player_left', { id: socket.id });
-  });
-});
-
-// --- Cadastro/Login de Usuários ---
 const fs = require('fs');
-const USERS_FILE = './users.json';
+const bodyParser = require('body-parser');
+const cors = require('cors');
 
-// Função para ler usuários do arquivo
-function readUsers() {
-    if (!fs.existsSync(USERS_FILE)) return [];
-    return JSON.parse(fs.readFileSync(USERS_FILE));
-}
-
-// Função para salvar usuários no arquivo
-function saveUsers(users) {
-    fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
-}
-
-// Cadastro
-app.post('/api/register', (req, res) => {
-    const { login, password } = req.body;
-    if (!login || !password) return res.status(400).json({ error: 'Login e senha obrigatórios.' });
-    const users = readUsers();
-    if (users.find(u => u.login === login)) return res.status(400).json({ error: 'Login já existe.' });
-    users.push({ login, password, progress: {} }); // já cria o campo progress vazio
-    saveUsers(users);
-    res.json({ success: true });
-});
-
-// Login
-app.post('/api/login', (req, res) => {
-    const { login, password } = req.body;
-    const users = readUsers();
-    const user = users.find(u => u.login === login && u.password === password);
-    if (!user) return res.status(401).json({ error: 'Login ou senha inválidos.' });
-    // Gere um token simples (não seguro para produção, mas suficiente para testes)
-    const token = crypto.randomBytes(16).toString('hex');
-    user.sessionToken = token;
-    saveUsers(users);
-    res.json({ success: true, token, login });
-});
-
-// Salvar progresso do jogador
-app.post('/api/save-progress', (req, res) => {
-    const { login, progress } = req.body;
-    if (!login || !progress) return res.status(400).json({ error: 'Dados insuficientes.' });
-    const users = readUsers();
-    const user = users.find(u => u.login === login);
-    if (!user) return res.status(404).json({ error: 'Usuário não encontrado.' });
-    user.progress = progress;
-    saveUsers(users);
-    res.json({ success: true });
-});
-
-// Recuperar progresso do jogador
-app.post('/api/load-progress', (req, res) => {
-    const { login } = req.body;
-    if (!login) return res.status(400).json({ error: 'Login obrigatório.' });
-    const users = readUsers();
-    const user = users.find(u => u.login === login);
-    if (!user) return res.status(404).json({ error: 'Usuário não encontrado.' });
-    res.json({ progress: user.progress || null });
-});
-
-// Logout
-app.post('/api/logout', (req, res) => {
-    const { login, token } = req.body;
-    const users = readUsers();
-    const user = users.find(u => u.login === login && u.sessionToken === token);
-    if (user) {
-        delete user.sessionToken;
-        saveUsers(users);
-    }
-    res.json({ success: true });
-});
-// --- Fim do bloco de cadastro/login ---
+const app = express();
+const server = http.createServer(app);
+const io = new Server(server);
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-  console.log(`Servidor rodando na porta ${PORT}`);
+
+// --- Middleware ---
+app.use(cors());
+app.use(bodyParser.json());
+app.use(express.static(path.join(__dirname, 'public')));
+
+// --- Authentication Data ---
+const USERS_FILE = path.join(__dirname, 'users.json');
+function readUsers() {
+    try {
+        if (fs.existsSync(USERS_FILE)) {
+            const data = fs.readFileSync(USERS_FILE);
+            return JSON.parse(data);
+        }
+    } catch (err) {
+        console.error("Error reading users file:", err);
+    }
+    return {};
+}
+function writeUsers(users) {
+    try {
+        fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
+    } catch (err) {
+        console.error("Error writing users file:", err);
+    }
+}
+
+// --- Authentication Routes ---
+app.post('/api/register', (req, res) => {
+    const { login, password } = req.body;
+    if (!login || !password) {
+        return res.status(400).json({ error: 'Usuário e senha são obrigatórios.' });
+    }
+    const users = readUsers();
+    if (users[login]) {
+        return res.status(400).json({ error: 'Usuário já existe.' });
+    }
+    users[login] = { password }; // Store hashed password in a real app
+    writeUsers(users);
+    res.status(201).json({ message: 'Usuário cadastrado com sucesso!' });
 });
 
-// --- Multiplayer: Socket.IO ---
-let socket = null;
-let otherPlayers = {}; // { id: {name, x, y, color, mapId} }
+app.post('/api/login', (req, res) => {
+    const { login, password } = req.body;
+    if (!login || !password) {
+        return res.status(400).json({ error: 'Usuário e senha são obrigatórios.' });
+    }
+    const users = readUsers();
+    const user = users[login];
+    if (!user || user.password !== password) { // Compare hashed passwords in a real app
+        return res.status(401).json({ error: 'Usuário ou senha inválidos.' });
+    }
+    res.json({ message: 'Login bem-sucedido!', token: `fake-token-for-${login}` });
+});
 
-function connectSocketIO() {
-    if (socket) return;
-    socket = io();
-    // On connect, send player info
-    socket.on('connect', () => {
-        sendPlayerStateToServer();
+// --- Game Constants (Shared with Client Logic if possible, or ensure consistency) ---
+const MAP_TILES = { EMPTY: 0, OBSTACLE_ROCK: 1, DECORATION_TREE: 2, DECORATION_BUSH: 3 };
+const OPEN_WORLD_ID = 'open_world';
+const OPEN_WORLD_SIZE = 200; // Should match client if client generates fallback
+const DEFAULT_GRID_COLS = 20; // Default for smaller maps if not specified
+const DEFAULT_GRID_ROWS = 15; // Default for smaller maps if not specified
+
+
+// --- Game State Management (Server-Side) ---
+const players = {}; // { socketId: { id, name, mapId, x, y, color, ... } }
+const maps = {};    // { mapId: { players: Set<socketId>, mapLayoutData: [...], enemies: [...] } }
+
+// --- Map Generation Logic (Server-Side) ---
+function generateServerMapLayout(mapId, G_COLS, G_ROWS) {
+    const layout = [];
+    const currentMapConnections = mapConnections[mapId] || {}; // Get connections for the current map
+
+    for (let r = 0; r < G_ROWS; r++) {
+        layout[r] = [];
+        for (let c = 0; c < G_COLS; c++) {
+            if (r === 0 || r === G_ROWS - 1 || c === 0 || c === G_COLS - 1) {
+                // Check for connection points before placing a wall
+                let isConnection = false;
+                if (r === 0 && currentMapConnections.up) isConnection = true;
+                else if (r === G_ROWS - 1 && currentMapConnections.down) isConnection = true;
+                else if (c === 0 && currentMapConnections.left) isConnection = true;
+                else if (c === G_COLS - 1 && currentMapConnections.right) isConnection = true;
+                
+                layout[r][c] = isConnection ? MAP_TILES.EMPTY : MAP_TILES.OBSTACLE_ROCK;
+            } else {
+                layout[r][c] = MAP_TILES.EMPTY;
+            }
+        }
+    }
+    // Add random obstacles and decorations (similar to client, but server is the authority)
+    let rockDensity = (mapId === 'mapa_chefe') ? 0.1 : 0.05;
+    let decorDensity = (mapId === 'mapa_chefe') ? 0.05 : 0.1;
+
+    for (let r = 1; r < G_ROWS - 1; r++) {
+        for (let c = 1; c < G_COLS - 1; c++) {
+            // Basic check to avoid placing obstacles on common spawn areas (e.g., near edges)
+            // A more robust check would consider actual player/enemy spawn points if they are fixed.
+            if (r < 3 && c < 3) continue; // Example: keep top-left area clearer
+
+            if (Math.random() < rockDensity) {
+                layout[r][c] = MAP_TILES.OBSTACLE_ROCK;
+            } else if (Math.random() < decorDensity) {
+                layout[r][c] = Math.random() < 0.5 ? MAP_TILES.DECORATION_TREE : MAP_TILES.DECORATION_BUSH;
+            }
+        }
+    }
+    return layout;
+}
+
+const mapConnections = { // Define this on server too for map generation logic
+    'mapa1': { right: 'mapa2', gridCols: 20, gridRows: 15 },
+    'mapa2': { left: 'mapa1', right: 'mapa_chefe', gridCols: 20, gridRows: 15 },
+    'mapa_chefe': { left: 'mapa2', gridCols: 25, gridRows: 20 }, // Boss map might be larger
+    [OPEN_WORLD_ID]: { gridCols: OPEN_WORLD_SIZE, gridRows: OPEN_WORLD_SIZE } // Special case for open world
+};
+
+
+const serverGeneratedMapLayouts = {}; // Store generated layouts
+
+// Initialize map structures and generate layouts on server start
+for (const mapId in mapConnections) {
+    const G_COLS = mapConnections[mapId].gridCols || DEFAULT_GRID_COLS;
+    const G_ROWS = mapConnections[mapId].gridRows || DEFAULT_GRID_ROWS;
+    serverGeneratedMapLayouts[mapId] = generateServerMapLayout(mapId, G_COLS, G_ROWS);
+
+    maps[mapId] = {
+        players: new Set(),
+        mapLayoutData: serverGeneratedMapLayouts[mapId],
+        enemies: JSON.parse(JSON.stringify(mapInitialEnemies[mapId] || [])).map(enemyConfig => ({
+            id: enemyConfig.id,
+            originalOverworldX: enemyConfig.originalOverworldX,
+            originalOverworldY: enemyConfig.originalOverworldY,
+            overworldX: enemyConfig.originalOverworldX,
+            overworldY: enemyConfig.originalOverworldY,
+            isAliveOverworld: true,
+            hp: enemyConfig.data.combatStats.maxHp,
+            combatStats: enemyConfig.data.combatStats,
+            aggroRange: enemyConfig.data.aggroRange,
+            respawnTimer: null
+        }))
+    };
+}
+// Initialize open world enemies (if not covered by mapInitialEnemies structure above)
+if (!maps[OPEN_WORLD_ID].enemies.length && mapInitialEnemies[OPEN_WORLD_ID] && mapInitialEnemies[OPEN_WORLD_ID].length > 0) {
+     maps[OPEN_WORLD_ID].enemies = JSON.parse(JSON.stringify(mapInitialEnemies[OPEN_WORLD_ID])).map(enemyConfig => ({
+        ...enemyConfig, // Spread the initial config
+        isAliveOverworld: true,
+        hp: enemyConfig.data.combatStats.maxHp,
+        respawnTimer: null
+    }));
+}
+
+
+const ENEMY_RESPAWN_TIME = 30000; // 30 segundos
+
+io.on('connection', (socket) => {
+    console.log('Usuário conectado:', socket.id);
+
+    socket.on('joinMap', (data) => {
+        const { mapId, playerId, x, y, name, color } = data;
+        if (!mapId || !playerId || !maps[mapId]) {
+            console.warn(`Tentativa de joinMap inválida: mapId=${mapId}, playerId=${playerId}`);
+            return;
+        }
+
+        // Leave previous room if any
+        if (players[socket.id] && players[socket.id].mapId && players[socket.id].mapId !== mapId) {
+            const oldMapId = players[socket.id].mapId;
+            socket.leave(oldMapId);
+            if (maps[oldMapId]) {
+                maps[oldMapId].players.delete(socket.id);
+                socket.to(oldMapId).emit('playerLeft', { playerId: players[socket.id].id, mapId: oldMapId });
+            }
+        }
+        
+        socket.join(mapId);
+        
+        players[socket.id] = {
+            id: playerId, socketId: socket.id, name: name, mapId: mapId,
+            x: x, y: y, color: color || '#00ff00'
+        };
+        maps[mapId].players.add(socket.id);
+
+        const playersInMap = [];
+        maps[mapId].players.forEach(playerSocketId => {
+            if (players[playerSocketId]) {
+                playersInMap.push({
+                    playerId: players[playerSocketId].id,
+                    x: players[playerSocketId].x, y: players[playerSocketId].y,
+                    name: players[playerSocketId].name, color: players[playerSocketId].color,
+                    mapId: players[playerSocketId].mapId
+                });
+            }
+        });
+
+        socket.emit('mapState', {
+            mapId: mapId,
+            players: playersInMap,
+            mapLayoutData: maps[mapId].mapLayoutData, // Envia o layout do mapa do servidor
+            enemies: maps[mapId].enemies.map(e => ({ // Envia estado atual dos inimigos
+                id: e.id,
+                overworldX: e.overworldX, overworldY: e.overworldY,
+                isAliveOverworld: e.isAliveOverworld,
+                hp: e.hp, // Enviar HP atual para o cliente
+                combatStats: e.combatStats,
+                aggroRange: e.aggroRange
+            }))
+        });
+
+        socket.to(mapId).emit('playerJoined', {
+            playerId: playerId, x: x, y: y, name: name, color: players[socket.id].color, mapId: mapId
+        });
+        console.log(`${name} (${playerId}) entrou no mapa ${mapId}`);
     });
-    // Receive all players on init
-    socket.on('init', (data) => {
-        otherPlayers = {};
-        for (const [id, p] of Object.entries(data.players)) {
-            if (id !== socket.id) {
-                otherPlayers[id] = { ...p };
+
+    socket.on('leaveMap', (data) => {
+        const { playerId, mapId } = data;
+        if (players[socket.id] && maps[mapId] && players[socket.id].mapId === mapId) {
+            socket.leave(mapId);
+            maps[mapId].players.delete(socket.id);
+            socket.to(mapId).emit('playerLeft', { playerId: playerId, mapId: mapId });
+            // console.log(`${players[socket.id]?.name} saiu do mapa ${mapId}`);
+            // Não deleta players[socket.id] aqui, pois o jogador pode estar apenas mudando de mapa
+        }
+    });
+
+    socket.on('playerMoved', (data) => {
+        const { playerId, mapId, x, y } = data;
+        if (players[socket.id] && players[socket.id].mapId === mapId) {
+            players[socket.id].x = x;
+            players[socket.id].y = y;
+            socket.to(mapId).emit('playerMoved', { playerId, mapId, x, y });
+        }
+    });
+
+    socket.on('chatMessage', (data) => {
+        const { senderId, senderName, message, mapId } = data;
+        if (players[socket.id] && players[socket.id].mapId === mapId) {
+            io.to(mapId).emit('chatMessage', { senderId, senderName, message });
+        }
+    });
+
+    socket.on('enemyDefeated', (data) => { 
+        const { enemyId, mapId } = data;
+        if (maps[mapId] && maps[mapId].enemies) {
+            const enemy = maps[mapId].enemies.find(e => e.id === enemyId);
+            if (enemy && enemy.isAliveOverworld) {
+                enemy.isAliveOverworld = false;
+                enemy.hp = 0; // Garante que o HP seja 0
+                console.log(`Inimigo ${enemyId} (${enemy.combatStats.name}) no mapa ${mapId} derrotado. Iniciando timer de respawn.`);
+                
+                if (enemy.respawnTimer) clearTimeout(enemy.respawnTimer);
+                
+                enemy.respawnTimer = setTimeout(() => {
+                    enemy.isAliveOverworld = true;
+                    enemy.hp = enemy.combatStats.maxHp; 
+                    enemy.overworldX = enemy.originalOverworldX; 
+                    enemy.overworldY = enemy.originalOverworldY;
+                    
+                    io.to(mapId).emit('enemyRespawned', {
+                        id: enemy.id,
+                        mapId: mapId,
+                        overworldX: enemy.overworldX,
+                        overworldY: enemy.overworldY,
+                        isAliveOverworld: true,
+                        hp: enemy.hp,
+                        combatStats: enemy.combatStats, 
+                        aggroRange: enemy.aggroRange
+                    });
+                    console.log(`Inimigo ${enemyId} (${enemy.combatStats.name}) no mapa ${mapId} reapareceu.`);
+                    enemy.respawnTimer = null;
+                }, ENEMY_RESPAWN_TIME);
             }
         }
     });
-    // New player joined
-    socket.on('player_joined', (p) => {
-        if (p.id !== socket.id) otherPlayers[p.id] = { ...p };
+
+    socket.on('playerDisconnecting', () => { 
+        handleDisconnect(socket);
     });
-    // Player moved
-    socket.on('player_moved', (data) => {
-        if (data.id !== socket.id) {
-            otherPlayers[data.id] = {
-                ...otherPlayers[data.id],
-                ...data // update all fields: x, y, name, color, mapId
-            };
+
+    socket.on('disconnect', () => {
+        handleDisconnect(socket);
+    });
+
+    function handleDisconnect(socketInstance) {
+        const player = players[socketInstance.id];
+        if (player) {
+            console.log(`${player.name} (${player.id}) desconectou.`);
+            if (maps[player.mapId]) {
+                maps[player.mapId].players.delete(socketInstance.id);
+                socketInstance.to(player.mapId).emit('playerLeft', { playerId: player.id, mapId: player.mapId });
+            }
+            delete players[socketInstance.id];
+        } else {
+            // console.log('Um usuário desconectou (sem dados de jogador):', socketInstance.id);
         }
-    });
-    // Player left
-    socket.on('player_left', (data) => {
-        delete otherPlayers[data.id];
-    });
-}
-
-function sendPlayerStateToServer() {
-    if (!socket || !socket.connected) return;
-    // Only send if in overworld
-    if (gameState === 'overworld') {
-        socket.emit('move', {
-            x: player.overworldX,
-            y: player.overworldY,
-            name: player.name,
-            color: player.color,
-            mapId: currentMapId
-        });
     }
-}
+});
 
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+server.listen(PORT, () => {
+    console.log(`Servidor MMORPG rodando na porta ${PORT}`);
+    console.log(`Acesse o jogo em http://localhost:${PORT}`);
+});
