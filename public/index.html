@@ -408,6 +408,15 @@
         // Cache para os layouts de mapa gerados (ou recebidos do servidor)
         const mapLayoutCache = {};
 
+        const mapInitialEnemies = {
+            mapa1: [
+                { id: 1, originalOverworldX: 8, originalOverworldY: 5, data: { combatStats: { maxHp: 100 }, aggroRange: 5 } },
+                // Add more enemies here
+            ],
+            mapa2: [],
+            mapa_chefe: [],
+        };
+
 
         function generateMapFor(mapId, serverMapLayout = null) {
             // Se o servidor fornecer um layout, use-o (para persistência e sincronização)
@@ -500,7 +509,7 @@
                 }
                 let rockDensity = 0.05, decorDensity = 0.1;
                 if (mapId === 'mapa_chefe') { rockDensity = 0.1; decorDensity = 0.05; }
-                for (let r = 1; r < GRID_ROWS - 1; r++) { 
+                for (let r = 1; r < GRID_ROWS - 1; r++) {
                     for (let c = 1; c < GRID_COLS - 1; c++) {
                         let isEntitySpawn = (r === player.overworldY && c === player.overworldX);
                         if (!isEntitySpawn) {
@@ -546,14 +555,18 @@
         };
 
         // Inimigos: Adicionar originalOverworldX/Y para respawn
-        let enemies = [ 
-            { id: 1, mapId: 'mapa1', originalOverworldX: 8, originalOverworldY: 5, overworldX: 8, overworldY: 5, aggroRange: 4, isAliveOverworld: true, combatStats: { size: TILE_SIZE * 0.8, color: 'tomato', hp: 70, maxHp: 70, ap: 4, maxAp: 4, mp: 2, maxMp: 2, attackPower: 10, attackRange: 1, name: "Goblin Batedor", loot: { gold: 10 } } },
-            { id: 2, mapId: 'mapa1', originalOverworldX: 12, originalOverworldY: 10, overworldX: 12, overworldY: 10, aggroRange: 4, isAliveOverworld: true, combatStats: { size: TILE_SIZE * 0.8, color: 'tomato', hp: 70, maxHp: 70, ap: 4, maxAp: 4, mp: 2, maxMp: 2, attackPower: 10, attackRange: 1, name: "Goblin Batedor", loot: { gold: 10 } } },
-            { id: 3, mapId: 'mapa2', originalOverworldX: 3, originalOverworldY: 8, overworldX: 3, overworldY: 8, aggroRange: 5, isAliveOverworld: true, combatStats: { size: TILE_SIZE * 0.85, color: 'darkorange', hp: 90, maxHp: 90, ap: 5, maxAp: 5, mp: 3, maxMp: 3, attackPower: 12, attackRange: 1, name: "Orc Brutamontes", loot: { gold: 15 } } },
-            { id: 4, mapId: 'mapa2', originalOverworldX: 10, originalOverworldY: 4, overworldX: 10, overworldY: 4, aggroRange: 5, isAliveOverworld: true, combatStats: { size: TILE_SIZE * 0.85, color: 'darkorange', hp: 90, maxHp: 90, ap: 5, maxAp: 5, mp: 3, maxMp: 3, attackPower: 12, attackRange: 1, name: "Orc Brutamontes", loot: { gold: 15 } } },
-            { id: 5, mapId: 'mapa_chefe', originalOverworldX: 10, originalOverworldY: 7, overworldX: 10, overworldY: 7, aggroRange: 7, isAliveOverworld: true, combatStats: { size: TILE_SIZE * 1.2, color: 'purple', hp: 200, maxHp: 200, ap: 6, maxAp: 6, mp: 3, maxMp: 3, attackPower: 25, attackRange: 2, name: "Rei Goblin", loot: { gold: 100 } } },
-            { id: -1, mapId: 'combate_apenas', originalOverworldX: -1, originalOverworldY: -1, overworldX: -1, overworldY: -1, isAliveOverworld: false, combatStats: { size: TILE_SIZE * 0.7, color: 'crimson', hp: 50, maxHp: 50, ap: 4, maxAp: 4, mp: 2, maxMp: 2, attackPower: 8, attackRange: 1, name: "Guarda Goblin" } },
-        ];
+        let enemies = JSON.parse(JSON.stringify(mapInitialEnemies[mapId] || [])).map(enemyConfig => ({
+            id: enemyConfig.id,
+            originalOverworldX: enemyConfig.originalOverworldX,
+            originalOverworldY: enemyConfig.originalOverworldY,
+            overworldX: enemyConfig.originalOverworldX,
+            overworldY: enemyConfig.originalOverworldY,
+            isAliveOverworld: true,
+            hp: enemyConfig.data.combatStats.maxHp,
+            combatStats: enemyConfig.data.combatStats,
+            aggroRange: enemyConfig.data.aggroRange,
+            respawnTimer: null,
+        }));
         let activeCombatEnemy = null; 
 
         let currentTurn = 'player'; 
@@ -1187,7 +1200,7 @@
                                 }
                                 if (!isOccupiedByOtherEntity) {
                                     for (const pId in otherPlayers) {
-                                        if (otherPlayers[pId].mapId === currentMapId && otherPlayers[pId].x === nextX && otherPlayers[pId].y === nextY) {
+                                        if (otherPlayers[pId].mapId === OPEN_WORLD_ID && otherPlayers[pId].x === nextX && otherPlayers[pId].y === nextY) {
                                             isOccupiedByOtherEntity = true; break;
                                         }
                                     }
@@ -1215,7 +1228,7 @@
                                 }
                                 if (!isOccupiedByOtherEntity) {
                                      for (const pId in otherPlayers) {
-                                        if (otherPlayers[pId].mapId === currentMapId && otherPlayers[pId].x === nextX && otherPlayers[pId].y === nextY) {
+                                        if (otherPlayers[pId].mapId === OPEN_WORLD_ID && otherPlayers[pId].x === nextX && otherPlayers[pId].y === nextY) {
                                             isOccupiedByOtherEntity = true; break;
                                         }
                                     }
@@ -1501,4 +1514,3 @@
     </script>
 </body>
 </html>
-```

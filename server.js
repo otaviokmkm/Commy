@@ -131,16 +131,25 @@ const mapConnections = { // Define this on server too for map generation logic
 
 const serverGeneratedMapLayouts = {}; // Store generated layouts
 
+// Ensure mapInitialEnemies is properly initialized
+const mapInitialEnemies = {}; // Add this if mapInitialEnemies is not defined elsewhere
+
+// Debugging log to check the value of mapInitialEnemies
+console.log('mapInitialEnemies:', mapInitialEnemies);
+
 // Initialize map structures and generate layouts on server start
 for (const mapId in mapConnections) {
     const G_COLS = mapConnections[mapId].gridCols || DEFAULT_GRID_COLS;
     const G_ROWS = mapConnections[mapId].gridRows || DEFAULT_GRID_ROWS;
     serverGeneratedMapLayouts[mapId] = generateServerMapLayout(mapId, G_COLS, G_ROWS);
 
+    // Validate mapInitialEnemies[mapId] and provide a fallback
+    const initialEnemies = Array.isArray(mapInitialEnemies[mapId]) ? mapInitialEnemies[mapId] : [];
+
     maps[mapId] = {
         players: new Set(),
         mapLayoutData: serverGeneratedMapLayouts[mapId],
-        enemies: JSON.parse(JSON.stringify(mapInitialEnemies[mapId] || [])).map(enemyConfig => ({
+        enemies: JSON.parse(JSON.stringify(initialEnemies)).map(enemyConfig => ({
             id: enemyConfig.id,
             originalOverworldX: enemyConfig.originalOverworldX,
             originalOverworldY: enemyConfig.originalOverworldY,
@@ -154,16 +163,9 @@ for (const mapId in mapConnections) {
         }))
     };
 }
-// Initialize open world enemies (if not covered by mapInitialEnemies structure above)
-if (!maps[OPEN_WORLD_ID].enemies.length && mapInitialEnemies[OPEN_WORLD_ID] && mapInitialEnemies[OPEN_WORLD_ID].length > 0) {
-     maps[OPEN_WORLD_ID].enemies = JSON.parse(JSON.stringify(mapInitialEnemies[OPEN_WORLD_ID])).map(enemyConfig => ({
-        ...enemyConfig, // Spread the initial config
-        isAliveOverworld: true,
-        hp: enemyConfig.data.combatStats.maxHp,
-        respawnTimer: null
-    }));
-}
 
+// Debugging: Log the value of mapInitialEnemies[mapId] for troubleshooting
+console.log('mapInitialEnemies:', mapInitialEnemies);
 
 const ENEMY_RESPAWN_TIME = 30000; // 30 segundos
 
