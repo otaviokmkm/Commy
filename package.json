@@ -7,11 +7,23 @@
     "start": "node server.js"
   },
   "dependencies": {
+    "body-parser": "^2.2.0",
     "cors": "^2.8.5",
-    "express": "^4.18.2",
-    "socket.io": "^4.7.4"
+    "express": "^4.21.2",
+    "socket.io": "^4.8.1"
   },
   "engines": {
     "node": ">=18"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/otaviokmkm/Commy.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/otaviokmkm/Commy/issues"
+  },
+  "homepage": "https://github.com/otaviokmkm/Commy#readme"
 }
