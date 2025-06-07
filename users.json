@@ -1,22 +1,520 @@
 [
-  {},
   {
     "login": "123",
     "password": "123",
-    "progress": {},
-    "sessionToken": "cdeedce2ad08c032129091568b0dbc8f"
-  },
-  {
-    "login": "1234",
-    "password": "1234",
-    "progress": {},
-    "sessionToken": "ee0f1c7f3d660984da1e075d2ab287ab"
-  },
-  {
-    "login": "12345",
-    "password": "12345",
     "progress": {
       "hp": 100,
+      "maxHp": 100,
+      "ap": 53,
+      "maxAp": 60,
+      "mp": 16,
+      "maxMp": 30,
+      "attackPower": 15,
+      "attackRange": 2,
+      "gold": 214,
+      "overworldX": 43,
+      "overworldY": 92,
+      "mapId": "open_world",
+      "experience": 30,
+      "lastCombatVictory": 1749326585265,
+      "lastSaved": 1749326585269,
+      "saveVersion": "2.0",
+      "statistics": {
+        "session": {
+          "loginTime": 1749322050585,
+          "lastSaveTime": 1749326585269,
+          "totalPlayTime": 0,
+          "sessionPlayTime": 4534684
+        },
+        "combat": {
+          "battlesWon": 18,
+          "battlesLost": 0,
+          "totalDamageDealt": 75,
+          "totalDamageTaken": 0,
+          "enemiesDefeated": 18,
+          "pvpWins": 0,
+          "pvpLosses": 0,
+          "criticalHits": 0,
+          "spellsCast": 0
+        },
+        "exploration": {
+          "mapsVisited": {},
+          "areasDiscovered": 0,
+          "distanceTraveled": 0,
+          "secretsFound": 0,
+          "treasuresCollected": 0
+        },
+        "progression": {
+          "levelsGained": 0,
+          "experienceGained": 0,
+          "skillPointsEarned": 0,
+          "goldEarned": 0,
+          "itemsAcquired": 0,
+          "questsCompleted": 0
+        },
+        "achievements": {
+          "milestones": [],
+          "firstTimeAchievements": {}
+        }
+      },
+      "saveMetadata": {
+        "triggerType": "combatVictory",
+        "saveCount": 282,
+        "backupData": {
+          "enemyId": 1019,
+          "enemyName": "Monstro Selvagem",
+          "damageDealt": 15,
+          "playerData": {
+            "hp": 100,
+            "maxHp": 100,
+            "ap": 53,
+            "maxAp": 60,
+            "mp": 16,
+            "maxMp": 30,
+            "overworldX": 43,
+            "overworldY": 92,
+            "mapId": "open_world",
+            "experience": 30,
+            "gold": 214,
+            "timestamp": 1749326585264
+          },
+          "lastSaved": 1749326585266,
+          "saveVersion": "2.0"
+        }
+      }
+    },
+    "sessionToken": "69f0c1dbdd5cda1dd9752d5351e0c134"
+  },
+  {
+    "login": "qe",
+    "password": "qe",
+    "progress": {
+      "hp": 100,
+      "maxHp": 100,
+      "ap": 3,
+      "maxAp": 3,
+      "mp": 20,
+      "maxMp": 20,
+      "attackPower": 15,
+      "attackRange": 2,
+      "gold": 0,
+      "overworldX": 103,
+      "overworldY": 130,
+      "mapId": "open_world",
+      "level": 1,
+      "experience": 0,
+      "lastSaved": 1749317522340,
+      "saveVersion": "2.0",
+      "saveMetadata": {
+        "triggerType": "periodicSave",
+        "saveCount": 22,
+        "backupData": {
+          "hp": 100,
+          "maxHp": 100,
+          "ap": 60,
+          "maxAp": 60,
+          "mp": 30,
+          "maxMp": 30,
+          "attackPower": 15,
+          "attackRange": 2,
+          "gold": 0,
+          "overworldX": 103,
+          "overworldY": 131,
+          "mapId": "open_world",
+          "lastSaved": 1749317522338,
+          "saveVersion": "2.0"
+        }
+      }
+    },
+    "sessionToken": "91e092f89088fe3410b22f93c4c53c6b"
+  },
+  {
+    "login": "qr",
+    "password": "qr",
+    "progress": {
+      "hp": 100,
+      "maxHp": 100,
+      "ap": 55,
+      "maxAp": 60,
+      "mp": 16,
+      "maxMp": 30,
+      "attackPower": 15,
+      "attackRange": 2,
+      "gold": 46,
+      "overworldX": 61,
+      "overworldY": 97,
+      "mapId": "open_world",
+      "lastCombatVictory": 1749326492529,
+      "lastSaved": 1749326492534,
+      "saveVersion": "2.0",
+      "statistics": {
+        "session": {
+          "loginTime": 1749326336941,
+          "lastSaveTime": 1749326492534,
+          "totalPlayTime": 0,
+          "sessionPlayTime": 155593
+        },
+        "combat": {
+          "battlesWon": 5,
+          "battlesLost": 0,
+          "totalDamageDealt": 15,
+          "totalDamageTaken": 0,
+          "enemiesDefeated": 5,
+          "pvpWins": 0,
+          "pvpLosses": 0,
+          "criticalHits": 0,
+          "spellsCast": 0
+        },
+        "exploration": {
+          "mapsVisited": {},
+          "areasDiscovered": 0,
+          "distanceTraveled": 0,
+          "secretsFound": 0,
+          "treasuresCollected": 0
+        },
+        "progression": {
+          "levelsGained": 0,
+          "experienceGained": 0,
+          "skillPointsEarned": 0,
+          "goldEarned": 0,
+          "itemsAcquired": 0,
+          "questsCompleted": 0
+        },
+        "achievements": {
+          "milestones": [],
+          "firstTimeAchievements": {}
+        }
+      },
+      "saveMetadata": {
+        "triggerType": "combatVictory",
+        "saveCount": 4,
+        "backupData": {
+          "enemyId": 1027,
+          "enemyName": "Monstro Selvagem",
+          "damageDealt": 15,
+          "playerData": {
+            "hp": 100,
+            "maxHp": 100,
+            "ap": 55,
+            "maxAp": 60,
+            "mp": 16,
+            "maxMp": 30,
+            "overworldX": 61,
+            "overworldY": 97,
+            "mapId": "open_world",
+            "gold": 46,
+            "timestamp": 1749326492529
+          },
+          "lastSaved": 1749326492532,
+          "saveVersion": "2.0"
+        }
+      }
+    },
+    "sessionToken": "42c09202cb81b4600ee4f7c0847bbd5a"
+  },
+  {
+    "login": "zv",
+    "password": "zv",
+    "progress": {},
+    "sessionToken": "a0ef332f06f69a21a91f3c2e0b9f4b12"
+  },
+  {
+    "login": "qg",
+    "password": "qg",
+    "progress": {
+      "hp": 100,
+      "maxHp": 100,
+      "ap": 55,
+      "maxAp": 60,
+      "mp": 14,
+      "maxMp": 30,
+      "attackPower": 15,
+      "attackRange": 2,
+      "gold": 46,
+      "overworldX": 60,
+      "overworldY": 96,
+      "mapId": "open_world",
+      "lastCombatVictory": 1749322043701,
+      "lastSaved": 1749322043704,
+      "saveVersion": "2.0",
+      "statistics": {
+        "session": {
+          "loginTime": 1749322040362,
+          "lastSaveTime": 1749322043704,
+          "totalPlayTime": 0,
+          "sessionPlayTime": 3342
+        },
+        "combat": {
+          "battlesWon": 3,
+          "battlesLost": 0,
+          "totalDamageDealt": 15,
+          "totalDamageTaken": 0,
+          "enemiesDefeated": 3,
+          "pvpWins": 0,
+          "pvpLosses": 0,
+          "criticalHits": 0,
+          "spellsCast": 0
+        },
+        "exploration": {
+          "mapsVisited": {},
+          "areasDiscovered": 0,
+          "distanceTraveled": 0,
+          "secretsFound": 0,
+          "treasuresCollected": 0
+        },
+        "progression": {
+          "levelsGained": 0,
+          "experienceGained": 0,
+          "skillPointsEarned": 0,
+          "goldEarned": 0,
+          "itemsAcquired": 0,
+          "questsCompleted": 0
+        },
+        "achievements": {
+          "milestones": [],
+          "firstTimeAchievements": {}
+        }
+      },
+      "saveMetadata": {
+        "triggerType": "combatVictory",
+        "saveCount": 3,
+        "backupData": {
+          "enemyId": 1027,
+          "enemyName": "Monstro Selvagem",
+          "damageDealt": 15,
+          "playerData": {
+            "hp": 100,
+            "maxHp": 100,
+            "ap": 55,
+            "maxAp": 60,
+            "mp": 14,
+            "maxMp": 30,
+            "overworldX": 60,
+            "overworldY": 96,
+            "mapId": "open_world",
+            "gold": 46,
+            "timestamp": 1749322043701
+          },
+          "lastSaved": 1749322043702,
+          "saveVersion": "2.0"
+        }
+      }
+    },
+    "sessionToken": "a0b3bf9b8c9292400502253656a33a97"
+  },
+  {
+    "login": "test",
+    "password": "test",
+    "progress": {
+      "gold": 100,
+      "level": 1,
+      "experience": 50,
+      "hp": 100,
+      "maxHp": 100,
+      "lastSaved": 1749322014558,
+      "saveVersion": "2.0",
+      "saveMetadata": {
+        "triggerType": "combatVictory",
+        "saveCount": 1,
+        "backupData": {}
+      }
+    },
+    "sessionToken": "1e0d30e10b1902512af8aa334a19eb07"
+  },
+  {
+    "login": "1e",
+    "password": "1e",
+    "progress": {},
+    "sessionToken": "64df319ffc7e336c10b9c6226b5a69bf"
+  },
+  {
+    "login": "1r",
+    "password": "1r",
+    "progress": {
+      "hp": 100,
+      "maxHp": 100,
+      "ap": 52,
+      "maxAp": 60,
+      "mp": 15,
+      "maxMp": 30,
+      "attackPower": 15,
+      "attackRange": 2,
+      "gold": 49,
+      "overworldX": 191,
+      "overworldY": 190,
+      "mapId": "open_world",
+      "experience": null,
+      "lastCombatVictory": 1749324463763,
+      "lastSaved": 1749324463766,
+      "saveVersion": "2.0",
+      "statistics": {
+        "session": {
+          "loginTime": 1749324379035,
+          "lastSaveTime": 1749324463766,
+          "totalPlayTime": 0,
+          "sessionPlayTime": 84731
+        },
+        "combat": {
+          "battlesWon": 4,
+          "battlesLost": 0,
+          "totalDamageDealt": 0,
+          "totalDamageTaken": 0,
+          "enemiesDefeated": 4,
+          "pvpWins": 0,
+          "pvpLosses": 0,
+          "criticalHits": 0,
+          "spellsCast": 0
+        },
+        "exploration": {
+          "mapsVisited": {},
+          "areasDiscovered": 0,
+          "distanceTraveled": 0,
+          "secretsFound": 0,
+          "treasuresCollected": 0
+        },
+        "progression": {
+          "levelsGained": 0,
+          "experienceGained": 0,
+          "skillPointsEarned": 0,
+          "goldEarned": 0,
+          "itemsAcquired": 0,
+          "questsCompleted": 0
+        },
+        "achievements": {
+          "milestones": [],
+          "firstTimeAchievements": {}
+        }
+      },
+      "saveMetadata": {
+        "triggerType": "combatVictory",
+        "saveCount": 4,
+        "backupData": {
+          "hp": 100,
+          "maxHp": 100,
+          "ap": 54,
+          "maxAp": 60,
+          "mp": 16,
+          "maxMp": 30,
+          "attackPower": 15,
+          "attackRange": 2,
+          "gold": 50,
+          "overworldX": 159,
+          "overworldY": 146,
+          "mapId": "open_world",
+          "experience": null,
+          "lastCombatVictory": 1749324445580,
+          "lastSaved": 1749324445582,
+          "saveVersion": "2.0"
+        }
+      }
+    },
+    "sessionToken": "c00813917d978aeb19108d4a325ddaa4"
+  },
+  {
+    "login": "1q",
+    "password": "1q",
+    "progress": {},
+    "sessionToken": "ac56819749b513565252eaca867f1ad4"
+  },
+  {
+    "login": "qe1",
+    "password": "qe1",
+    "progress": {},
+    "sessionToken": "cb5476eb7cd010a4f258e55aeca647ca"
+  },
+  {
+    "login": "q2",
+    "password": "q2",
+    "progress": {
+      "hp": 100,
+      "maxHp": 100,
+      "ap": 55,
+      "maxAp": 60,
+      "mp": 16,
+      "maxMp": 30,
+      "attackPower": 15,
+      "attackRange": 2,
+      "gold": 36,
+      "overworldX": 89,
+      "overworldY": 21,
+      "mapId": "open_world",
+      "experience": null,
+      "lastCombatVictory": 1749325301453,
+      "lastSaved": 1749325301457,
+      "saveVersion": "2.0",
+      "statistics": {
+        "session": {
+          "loginTime": 1749324580124,
+          "lastSaveTime": 1749325301457,
+          "totalPlayTime": 0,
+          "sessionPlayTime": 721333
+        },
+        "combat": {
+          "battlesWon": 3,
+          "battlesLost": 0,
+          "totalDamageDealt": 0,
+          "totalDamageTaken": 0,
+          "enemiesDefeated": 3,
+          "pvpWins": 0,
+          "pvpLosses": 0,
+          "criticalHits": 0,
+          "spellsCast": 0
+        },
+        "exploration": {
+          "mapsVisited": {},
+          "areasDiscovered": 0,
+          "distanceTraveled": 0,
+          "secretsFound": 0,
+          "treasuresCollected": 0
+        },
+        "progression": {
+          "levelsGained": 0,
+          "experienceGained": 0,
+          "skillPointsEarned": 0,
+          "goldEarned": 0,
+          "itemsAcquired": 0,
+          "questsCompleted": 0
+        },
+        "achievements": {
+          "milestones": [],
+          "firstTimeAchievements": {}
+        }
+      },
+      "saveMetadata": {
+        "triggerType": "combatVictory",
+        "saveCount": 3,
+        "backupData": {
+          "hp": 100,
+          "maxHp": 100,
+          "ap": 55,
+          "maxAp": 60,
+          "mp": 16,
+          "maxMp": 30,
+          "attackPower": 15,
+          "attackRange": 2,
+          "gold": 12,
+          "overworldX": 94,
+          "overworldY": 16,
+          "mapId": "open_world",
+          "lastCombatVictory": 1749325294057,
+          "lastSaved": 1749325294059,
+          "saveVersion": "2.0"
+        }
+      }
+    },
+    "sessionToken": "cf02a4050311b42050b45d78e2486bb9"
+  },
+  {
+    "login": "q1",
+    "password": "q1",
+    "progress": {},
+    "sessionToken": "b951268f36176b11688c702b43dc4c2f"
+  },
+  {
+    "login": "q3",
+    "password": "q3",
+    "progress": {
+      "hp": 50,
       "maxHp": 100,
       "ap": 53,
       "maxAp": 60,
@@ -24,17 +522,610 @@
       "maxMp": 30,
       "attackPower": 15,
       "attackRange": 2,
-      "gold": 100,
-      "overworldX": 54,
-      "overworldY": 90,
-      "mapId": "open_world"
+      "gold": 79,
+      "overworldX": 88,
+      "overworldY": 75,
+      "mapId": "open_world",
+      "experience": null,
+      "lastCombatVictory": 1749326200202,
+      "lastSaved": 1749326200205,
+      "saveVersion": "2.0",
+      "statistics": {
+        "session": {
+          "loginTime": 1749325818650,
+          "lastSaveTime": 1749326200205,
+          "totalPlayTime": 0,
+          "sessionPlayTime": 381555
+        },
+        "combat": {
+          "battlesWon": 4,
+          "battlesLost": 0,
+          "totalDamageDealt": 0,
+          "totalDamageTaken": 0,
+          "enemiesDefeated": 4,
+          "pvpWins": 0,
+          "pvpLosses": 0,
+          "criticalHits": 0,
+          "spellsCast": 0
+        },
+        "exploration": {
+          "mapsVisited": {},
+          "areasDiscovered": 0,
+          "distanceTraveled": 0,
+          "secretsFound": 0,
+          "treasuresCollected": 0
+        },
+        "progression": {
+          "levelsGained": 0,
+          "experienceGained": 0,
+          "skillPointsEarned": 0,
+          "goldEarned": 0,
+          "itemsAcquired": 0,
+          "questsCompleted": 0
+        },
+        "achievements": {
+          "milestones": [],
+          "firstTimeAchievements": {}
+        }
+      },
+      "saveMetadata": {
+        "triggerType": "combatVictory",
+        "saveCount": 4,
+        "backupData": {
+          "hp": 50,
+          "maxHp": 100,
+          "ap": 53,
+          "maxAp": 60,
+          "mp": 16,
+          "maxMp": 30,
+          "attackPower": 15,
+          "attackRange": 2,
+          "gold": 52,
+          "overworldX": 88,
+          "overworldY": 75,
+          "mapId": "open_world",
+          "experience": null,
+          "lastCombatVictory": 1749326010660,
+          "lastSaved": 1749326010663,
+          "saveVersion": "2.0"
+        }
+      }
     },
-    "sessionToken": "31eec269188946d7928e31f83eba04ab"
+    "sessionToken": "2cf1ee415721bb990091baa761854430"
   },
   {
-    "login": "12312312",
-    "password": "13123231",
+    "login": "q5",
+    "password": "q5",
+    "progress": {
+      "enemyId": 1027,
+      "enemyName": "Monstro Selvagem",
+      "damageDealt": 15,
+      "playerData": {
+        "hp": 100,
+        "maxHp": 100,
+        "ap": 55,
+        "maxAp": 60,
+        "mp": 16,
+        "maxMp": 30,
+        "overworldX": 61,
+        "overworldY": 97,
+        "mapId": "open_world",
+        "gold": 23,
+        "timestamp": 1749326265327
+      },
+      "lastSaved": 1749326265330,
+      "saveVersion": "2.0",
+      "statistics": {
+        "session": {
+          "loginTime": 1749326213755,
+          "lastSaveTime": 1749326265330,
+          "totalPlayTime": 0,
+          "sessionPlayTime": 51575
+        },
+        "combat": {
+          "battlesWon": 2,
+          "battlesLost": 0,
+          "totalDamageDealt": 15,
+          "totalDamageTaken": 0,
+          "enemiesDefeated": 2,
+          "pvpWins": 0,
+          "pvpLosses": 0,
+          "criticalHits": 0,
+          "spellsCast": 0
+        },
+        "exploration": {
+          "mapsVisited": {},
+          "areasDiscovered": 0,
+          "distanceTraveled": 0,
+          "secretsFound": 0,
+          "treasuresCollected": 0
+        },
+        "progression": {
+          "levelsGained": 0,
+          "experienceGained": 0,
+          "skillPointsEarned": 0,
+          "goldEarned": 0,
+          "itemsAcquired": 0,
+          "questsCompleted": 0
+        },
+        "achievements": {
+          "milestones": [],
+          "firstTimeAchievements": {}
+        }
+      },
+      "saveMetadata": {
+        "triggerType": "combatVictory",
+        "saveCount": 1,
+        "backupData": {}
+      }
+    },
+    "sessionToken": "17b86d3d76a821eecca1f32563f479c3"
+  },
+  {
+    "login": "ty",
+    "password": "ty",
+    "progress": {
+      "enemyId": 1027,
+      "enemyName": "Monstro Selvagem",
+      "damageDealt": 15,
+      "playerData": {
+        "hp": 100,
+        "maxHp": 100,
+        "ap": 55,
+        "maxAp": 60,
+        "mp": 16,
+        "maxMp": 30,
+        "overworldX": 62,
+        "overworldY": 96,
+        "mapId": "open_world",
+        "gold": 46,
+        "timestamp": 1749326353687
+      },
+      "lastSaved": 1749326353689,
+      "saveVersion": "2.0",
+      "statistics": {
+        "session": {
+          "loginTime": 1749326233399,
+          "lastSaveTime": 1749326353689,
+          "totalPlayTime": 0,
+          "sessionPlayTime": 120290
+        },
+        "combat": {
+          "battlesWon": 4,
+          "battlesLost": 0,
+          "totalDamageDealt": 15,
+          "totalDamageTaken": 0,
+          "enemiesDefeated": 4,
+          "pvpWins": 0,
+          "pvpLosses": 0,
+          "criticalHits": 0,
+          "spellsCast": 0
+        },
+        "exploration": {
+          "mapsVisited": {},
+          "areasDiscovered": 0,
+          "distanceTraveled": 0,
+          "secretsFound": 0,
+          "treasuresCollected": 0
+        },
+        "progression": {
+          "levelsGained": 0,
+          "experienceGained": 0,
+          "skillPointsEarned": 0,
+          "goldEarned": 0,
+          "itemsAcquired": 0,
+          "questsCompleted": 0
+        },
+        "achievements": {
+          "milestones": [],
+          "firstTimeAchievements": {}
+        }
+      },
+      "saveMetadata": {
+        "triggerType": "combatVictory",
+        "saveCount": 3,
+        "backupData": {
+          "hp": 100,
+          "maxHp": 100,
+          "ap": 55,
+          "maxAp": 60,
+          "mp": 16,
+          "maxMp": 30,
+          "attackPower": 15,
+          "attackRange": 2,
+          "gold": 23,
+          "overworldX": 61,
+          "overworldY": 97,
+          "mapId": "open_world",
+          "lastCombatVictory": 1749326286378,
+          "lastSaved": 1749326286382,
+          "saveVersion": "2.0"
+        }
+      }
+    },
+    "sessionToken": "280781f979beba47582a1d7aa51cf71c"
+  },
+  {
+    "login": "f1",
+    "password": "f1",
     "progress": {},
-    "sessionToken": "5af1628f059c0d48096754fbd877d153"
+    "sessionToken": "8e877229bdd24b40c369ff4e25676495"
+  },
+  {
+    "login": "f3",
+    "password": "f3",
+    "progress": {
+      "hp": 100,
+      "maxHp": 100,
+      "ap": 55,
+      "maxAp": 60,
+      "mp": 16,
+      "maxMp": 30,
+      "attackPower": 15,
+      "attackRange": 2,
+      "gold": 23,
+      "overworldX": 60,
+      "overworldY": 96,
+      "mapId": "open_world",
+      "lastCombatVictory": 1749326776518,
+      "lastSaved": 1749326776522,
+      "saveVersion": "2.0",
+      "statistics": {
+        "session": {
+          "loginTime": 1749326768136,
+          "lastSaveTime": 1749326776522,
+          "totalPlayTime": 0,
+          "sessionPlayTime": 8386
+        },
+        "combat": {
+          "battlesWon": 1,
+          "battlesLost": 0,
+          "totalDamageDealt": 0,
+          "totalDamageTaken": 0,
+          "enemiesDefeated": 1,
+          "pvpWins": 0,
+          "pvpLosses": 0,
+          "criticalHits": 0,
+          "spellsCast": 0
+        },
+        "exploration": {
+          "mapsVisited": {},
+          "areasDiscovered": 0,
+          "distanceTraveled": 0,
+          "secretsFound": 0,
+          "treasuresCollected": 0
+        },
+        "progression": {
+          "levelsGained": 0,
+          "experienceGained": 0,
+          "skillPointsEarned": 0,
+          "goldEarned": 0,
+          "itemsAcquired": 0,
+          "questsCompleted": 0
+        },
+        "achievements": {
+          "milestones": [],
+          "firstTimeAchievements": {}
+        }
+      },
+      "saveMetadata": {
+        "triggerType": "combatVictory",
+        "saveCount": 1,
+        "backupData": {}
+      }
+    },
+    "sessionToken": "223840658b7f687eab640f3e2e7b2c56"
+  },
+  {
+    "login": "1g",
+    "password": "1g",
+    "progress": {
+      "hp": 100,
+      "maxHp": 100,
+      "ap": 53,
+      "maxAp": 60,
+      "mp": 21,
+      "maxMp": 30,
+      "attackPower": 15,
+      "attackRange": 2,
+      "gold": 46,
+      "overworldX": 8,
+      "overworldY": 14,
+      "mapId": "open_world",
+      "lastCombatVictory": 1749329989195,
+      "lastSaved": 1749329989185,
+      "saveVersion": "2.0",
+      "statistics": {
+        "session": {
+          "loginTime": 1749328909010,
+          "lastSaveTime": 1749329989185,
+          "totalPlayTime": 0,
+          "sessionPlayTime": 1080175
+        },
+        "combat": {
+          "battlesWon": 8,
+          "battlesLost": 0,
+          "totalDamageDealt": 45,
+          "totalDamageTaken": 0,
+          "enemiesDefeated": 8,
+          "pvpWins": 0,
+          "pvpLosses": 0,
+          "criticalHits": 0,
+          "spellsCast": 0
+        },
+        "exploration": {
+          "mapsVisited": {},
+          "areasDiscovered": 0,
+          "distanceTraveled": 0,
+          "secretsFound": 0,
+          "treasuresCollected": 0
+        },
+        "progression": {
+          "levelsGained": 0,
+          "experienceGained": 0,
+          "skillPointsEarned": 0,
+          "goldEarned": 0,
+          "itemsAcquired": 0,
+          "questsCompleted": 0
+        },
+        "achievements": {
+          "milestones": [],
+          "firstTimeAchievements": {}
+        }
+      },
+      "saveMetadata": {
+        "triggerType": "combatVictory",
+        "saveCount": 12,
+        "backupData": {
+          "hp": 100,
+          "maxHp": 100,
+          "ap": 53,
+          "maxAp": 60,
+          "mp": 21,
+          "maxMp": 30,
+          "attackPower": 15,
+          "attackRange": 2,
+          "gold": 23,
+          "overworldX": 8,
+          "overworldY": 14,
+          "mapId": "open_world",
+          "lastCombatVictory": 1749329455905,
+          "lastSaved": 1749329455910,
+          "saveVersion": "2.0"
+        }
+      }
+    },
+    "sessionToken": "e5aeb36dca8614d6ef893bf11eb39de4"
+  },
+  {
+    "login": "2g",
+    "password": "2g",
+    "progress": {
+      "hp": 100,
+      "maxHp": 100,
+      "ap": 54,
+      "maxAp": 60,
+      "mp": 22,
+      "maxMp": 30,
+      "attackPower": 15,
+      "attackRange": 2,
+      "gold": 163,
+      "overworldX": 44,
+      "overworldY": 91,
+      "mapId": "open_world",
+      "experience": 20,
+      "lastCombatVictory": 1749329317375,
+      "lastSaved": 1749329317380,
+      "saveVersion": "2.0",
+      "statistics": {
+        "session": {
+          "loginTime": 1749328916225,
+          "lastSaveTime": 1749329317380,
+          "totalPlayTime": 0,
+          "sessionPlayTime": 401155
+        },
+        "combat": {
+          "battlesWon": 4,
+          "battlesLost": 0,
+          "totalDamageDealt": 0,
+          "totalDamageTaken": 0,
+          "enemiesDefeated": 4,
+          "pvpWins": 0,
+          "pvpLosses": 0,
+          "criticalHits": 0,
+          "spellsCast": 0
+        },
+        "exploration": {
+          "mapsVisited": {},
+          "areasDiscovered": 0,
+          "distanceTraveled": 0,
+          "secretsFound": 0,
+          "treasuresCollected": 0
+        },
+        "progression": {
+          "levelsGained": 0,
+          "experienceGained": 0,
+          "skillPointsEarned": 0,
+          "goldEarned": 0,
+          "itemsAcquired": 0,
+          "questsCompleted": 0
+        },
+        "achievements": {
+          "milestones": [],
+          "firstTimeAchievements": {}
+        }
+      },
+      "saveMetadata": {
+        "triggerType": "combatVictory",
+        "saveCount": 11,
+        "backupData": {
+          "hp": 100,
+          "maxHp": 100,
+          "ap": 53,
+          "maxAp": 60,
+          "mp": 21,
+          "maxMp": 30,
+          "attackPower": 15,
+          "attackRange": 2,
+          "gold": 142,
+          "overworldX": 44,
+          "overworldY": 91,
+          "mapId": "open_world",
+          "experience": 10,
+          "lastCombatVictory": 1749329312535,
+          "lastSaved": 1749329312542,
+          "saveVersion": "2.0"
+        }
+      }
+    },
+    "sessionToken": "2072c905a9ebde8a380a731734e0951e"
+  },
+  {
+    "login": "1h",
+    "password": "1h",
+    "progress": {},
+    "sessionToken": "7d462c97f48b89ca78fcab68ff94bb8b"
+  },
+  {
+    "login": "qfq",
+    "password": "qfq",
+    "progress": {},
+    "sessionToken": "5cf45f60b0117fb178c85a4a790013c4"
+  },
+  {
+    "login": "qf",
+    "password": "qf",
+    "progress": {
+      "hp": 100,
+      "maxHp": 100,
+      "ap": 53,
+      "maxAp": 60,
+      "mp": 20,
+      "maxMp": 30,
+      "attackPower": 15,
+      "attackRange": 2,
+      "gold": 25,
+      "overworldX": 128,
+      "overworldY": 104,
+      "mapId": "open_world",
+      "lastCombatVictory": 1749330007544,
+      "lastSaved": 1749330007548,
+      "saveVersion": "2.0",
+      "statistics": {
+        "session": {
+          "loginTime": 1749329998393,
+          "lastSaveTime": 1749330007548,
+          "totalPlayTime": 0,
+          "sessionPlayTime": 9155
+        },
+        "combat": {
+          "battlesWon": 1,
+          "battlesLost": 0,
+          "totalDamageDealt": 0,
+          "totalDamageTaken": 0,
+          "enemiesDefeated": 1,
+          "pvpWins": 0,
+          "pvpLosses": 0,
+          "criticalHits": 0,
+          "spellsCast": 0
+        },
+        "exploration": {
+          "mapsVisited": {},
+          "areasDiscovered": 0,
+          "distanceTraveled": 0,
+          "secretsFound": 0,
+          "treasuresCollected": 0
+        },
+        "progression": {
+          "levelsGained": 0,
+          "experienceGained": 0,
+          "skillPointsEarned": 0,
+          "goldEarned": 0,
+          "itemsAcquired": 0,
+          "questsCompleted": 0
+        },
+        "achievements": {
+          "milestones": [],
+          "firstTimeAchievements": {}
+        }
+      },
+      "saveMetadata": {
+        "triggerType": "combatVictory",
+        "saveCount": 1,
+        "backupData": {}
+      }
+    },
+    "sessionToken": "8e273dda24a469e8f08454683c5efa41"
+  },
+  {
+    "login": "gf",
+    "password": "gf",
+    "progress": {},
+    "sessionToken": "6dde871414e08be723325cbaf0174f4c"
+  },
+  {
+    "login": "fg",
+    "password": "fg",
+    "progress": {
+      "hp": 100,
+      "maxHp": 100,
+      "ap": 55,
+      "maxAp": 60,
+      "mp": 23,
+      "maxMp": 30,
+      "attackPower": 15,
+      "attackRange": 2,
+      "gold": 24,
+      "overworldX": 6,
+      "overworldY": 117,
+      "mapId": "open_world",
+      "lastCombatVictory": 1749330125378,
+      "lastSaved": 1749330125378,
+      "saveVersion": "2.0",
+      "statistics": {
+        "session": {
+          "loginTime": 1749330067599,
+          "lastSaveTime": 1749330125378,
+          "totalPlayTime": 0,
+          "sessionPlayTime": 57779
+        },
+        "combat": {
+          "battlesWon": 1,
+          "battlesLost": 0,
+          "totalDamageDealt": 0,
+          "totalDamageTaken": 0,
+          "enemiesDefeated": 1,
+          "pvpWins": 0,
+          "pvpLosses": 0,
+          "criticalHits": 0,
+          "spellsCast": 0
+        },
+        "exploration": {
+          "mapsVisited": {},
+          "areasDiscovered": 0,
+          "distanceTraveled": 0,
+          "secretsFound": 0,
+          "treasuresCollected": 0
+        },
+        "progression": {
+          "levelsGained": 0,
+          "experienceGained": 0,
+          "skillPointsEarned": 0,
+          "goldEarned": 0,
+          "itemsAcquired": 0,
+          "questsCompleted": 0
+        },
+        "achievements": {
+          "milestones": [],
+          "firstTimeAchievements": {}
+        }
+      },
+      "saveMetadata": {
+        "triggerType": "combatVictory",
+        "saveCount": 1,
+        "backupData": {}
+      }
+    },
+    "sessionToken": "dda01d4bf2514289038ccf0146ba8f7e"
   }
 ]

@@ -649,17 +649,24 @@
                       // Apply server-provided enemies data
                     if (data.enemies) {
                         console.log('✅ Received server enemies data for', currentMapId, '- Count:', data.enemies.length);
-                        console.log('[DEBUG] First enemy loot data:', data.enemies[0]?.combatStats?.loot);                        if (currentMapId === OPEN_WORLD_ID) {
-                            openWorldEnemies = data.enemies.map(e => ({
-                                id: e.id,
-                                overworldX: e.overworldX,
-                                overworldY: e.overworldY,
-                                isAliveOverworld: e.isAliveOverworld,
-                                aggroRange: e.aggroRange,
-                                combatStats: e.combatStats,
-                                inCombat: e.inCombat || false,
-                                combatPlayerId: e.combatPlayerId || null
-                            }));
+                        console.log('[DEBUG] First enemy loot data:', data.enemies[0]?.combatStats?.loot);
+                        if (currentMapId === OPEN_WORLD_ID) {
+                            // Triple enemy instances for spawn
+                            openWorldEnemies = [];
+                            data.enemies.forEach(e => {
+                                for (let i = 0; i < 3; i++) {
+                                    openWorldEnemies.push({
+                                        id: e.id,
+                                        overworldX: e.overworldX,
+                                        overworldY: e.overworldY,
+                                        isAliveOverworld: e.isAliveOverworld,
+                                        aggroRange: e.aggroRange,
+                                        combatStats: e.combatStats,
+                                        inCombat: e.inCombat || false,
+                                        combatPlayerId: e.combatPlayerId || null
+                                    });
+                                }
+                            });
                             console.log('[DEBUG] First openWorldEnemy loot:', openWorldEnemies[0]?.combatStats?.loot);
                             // Additional debug: Test combat simulation
                             if (openWorldEnemies.length > 0) {

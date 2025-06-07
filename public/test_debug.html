@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Authentication System</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #1a1a1a; color: #fff; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .test-section { border: 1px solid #333; padding: 20px; margin: 10px 0; background: #2a2a2a; }
+        .test-button { padding: 10px 20px; margin: 5px; background: #4CAF50; color: white; border: none; cursor: pointer; }
+        .test-button:hover { background: #45a049; }
+        .error-button { background: #f44336; }
+        .info-button { background: #2196F3; }
+        .warning-button { background: #ff9800; }
+        .output { background: #000; padding: 10px; margin: 10px 0; border: 1px solid #333; max-height: 300px; overflow-y: auto; }
+        .status { padding: 5px 10px; margin: 5px 0; border-radius: 3px; }
+        .status.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .status.error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .status.warning { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        .status.info { background: #d1ecf1; color: #0c5460; border: 1px solid #b8daff; }
+        input[type="text"], input[type="password"] { padding: 8px; margin: 5px; width: 200px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🛠️ Authentication System Debug Console</h1>
+        
+        <div class="test-section">
+            <h2>🔍 System Status</h2>
+            <button class="test-button info-button" onclick="checkSystemStatus()">Check System Status</button>
+            <button class="test-button info-button" onclick="checkServerConnection()">Test Server Connection</button>
+            <button class="test-button warning-button" onclick="clearAllData()">Clear All Data</button>
+            <div id="system-status" class="output"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>🔐 API Authentication Tests</h2>
+            <div>
+                <input type="text" id="test-username" placeholder="Username (default: 123)" value="123">
+                <input type="password" id="test-password" placeholder="Password (default: 123)" value="123">
+            </div>
+            <button class="test-button" onclick="testLoginAPI()">Test Login API</button>
+            <button class="test-button" onclick="testRegisterAPI()">Test Register API</button>
+            <button class="test-button error-button" onclick="testInvalidLogin()">Test Invalid Login</button>
+            <div id="api-output" class="output"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>🔌 Socket Authentication Tests</h2>
+            <button class="test-button" onclick="testSocketConnection()">Test Socket Connection</button>
+            <button class="test-button" onclick="testSocketAuth()">Test Socket Authentication</button>
+            <button class="test-button error-button" onclick="testInvalidSocketAuth()">Test Invalid Socket Auth</button>
+            <button class="test-button warning-button" onclick="disconnectSocket()">Disconnect Socket</button>
+            <div id="socket-output" class="output"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>🎮 Full Integration Test</h2>
+            <button class="test-button" onclick="runFullTest()">Run Complete Authentication Flow</button>
+            <button class="test-button warning-button" onclick="simulateDoubleLogin()">Simulate Double Login</button>
+            <div id="integration-output" class="output"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>📊 Debug Information</h2>
+            <button class="test-button info-button" onclick="showDebugInfo()">Show Debug Info</button>
+            <button class="test-button info-button" onclick="exportLogs()">Export Test Logs</button>
+            <div id="debug-output" class="output"></div>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        let socket = null;
+        let testLogs = [];
+        let testStartTime = Date.now();
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toISOString();
+            const logEntry = `[${timestamp}] ${message}`;
+            testLogs.push({ timestamp, message, type });
+            console.log(logEntry);
+        }
+
+        function displayOutput(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            const div = document.createElement('div');
+            div.className = `status ${type}`;
+            div.innerHTML = `<strong>[${new Date().toLocaleTimeString()}]</strong> ${message}`;
+            element.appendChild(div);
+            element.scrollTop = element.scrollHeight;
+        }
+
+        // System Status Tests
+        async function checkSystemStatus() {
+            displayOutput('system-status', 'Checking system status...', 'info');
+            
+            try {
+                // Check localStorage
+                const storage = {
+                    sessionToken: localStorage.getItem('sessionToken'),
+                    username: localStorage.getItem('username'),
+                    mmorpg_progress: localStorage.getItem('mmorpg_progress')
+                };
+                
+                displayOutput('system-status', `LocalStorage: ${JSON.stringify(storage, null, 2)}`, 'info');
+                
+                // Check browser info
+                const browserInfo = {
+                    userAgent: navigator.userAgent,
+                    language: navigator.language,
+                    cookieEnabled: navigator.cookieEnabled,
+                    onLine: navigator.onLine
+                };
+                
+                displayOutput('system-status', `Browser: ${JSON.stringify(browserInfo, null, 2)}`, 'info');
+                
+                displayOutput('system-status', '✅ System status check completed', 'success');
+                
+            } catch (error) {
+                displayOutput('system-status', `❌ System status error: ${error.message}`, 'error');
+                log(`System status error: ${error.message}`, 'error');
+            }
+        }
+
+        async function checkServerConnection() {
+            displayOutput('system-status', 'Testing server connection...', 'info');
+            
+            try {
+                const startTime = Date.now();
+                const response = await fetch('/health', { method: 'GET' });
+                const endTime = Date.now();
+                
+                if (response.ok) {
+                    displayOutput('system-status', `✅ Server connected (${endTime - startTime}ms)`, 'success');
+                } else {
+                    displayOutput('system-status', `⚠️ Server returned status: ${response.status}`, 'warning');
+                }
+            } catch (error) {
+                displayOutput('system-status', `❌ Server connection failed: ${error.message}`, 'error');
+                log(`Server connection error: ${error.message}`, 'error');
+            }
+        }
+
+        function clearAllData() {
+            localStorage.clear();
+            sessionStorage.clear();
+            if (socket) {
+                socket.disconnect();
+                socket = null;
+            }
+            displayOutput('system-status', '🧹 All data cleared', 'warning');
+            log('All data cleared');
+        }
+
+        // API Tests
+        async function testLoginAPI() {
+            const username = document.getElementById('test-username').value || '123';
+            const password = document.getElementById('test-password').value || '123';
+            
+            displayOutput('api-output', `Testing login API with ${username}/${password}...`, 'info');
+            
+            try {
+                const startTime = Date.now();
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ login: username, password })
+                });
+                const endTime = Date.now();
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    displayOutput('api-output', `✅ Login successful (${endTime - startTime}ms)`, 'success');
+                    displayOutput('api-output', `Token: ${data.token?.substring(0, 8)}...`, 'info');
+                    displayOutput('api-output', `User: ${data.login}`, 'info');
+                    
+                    // Save to localStorage for socket tests
+                    localStorage.setItem('sessionToken', data.token);
+                    localStorage.setItem('username', data.login);
+                    
+                    log(`Login API success for ${username}`, 'success');
+                } else {
+                    displayOutput('api-output', `❌ Login failed: ${data.error || 'Unknown error'}`, 'error');
+                    log(`Login API failed for ${username}: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                displayOutput('api-output', `❌ Login API error: ${error.message}`, 'error');
+                log(`Login API error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testRegisterAPI() {
+            const username = `test_${Date.now()}`;
+            const password = 'testpass123';
+            
+            displayOutput('api-output', `Testing register API with ${username}...`, 'info');
+            
+            try {
+                const response = await fetch('/api/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ login: username, password })
+                });
+                
+                if (response.ok) {
+                    displayOutput('api-output', `✅ Registration successful for ${username}`, 'success');
+                    log(`Registration success for ${username}`, 'success');
+                } else {
+                    const data = await response.json();
+                    displayOutput('api-output', `❌ Registration failed: ${data.error || 'Unknown error'}`, 'error');
+                    log(`Registration failed for ${username}: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                displayOutput('api-output', `❌ Register API error: ${error.message}`, 'error');
+                log(`Register API error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testInvalidLogin() {
+            displayOutput('api-output', 'Testing invalid login credentials...', 'info');
+            
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ login: 'invalid_user', password: 'wrong_password' })
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    displayOutput('api-output', `✅ Invalid login correctly rejected: ${data.error}`, 'success');
+                    log('Invalid login correctly rejected', 'success');
+                } else {
+                    displayOutput('api-output', `❌ Invalid login was accepted (security issue!)`, 'error');
+                    log('Invalid login was accepted - security issue!', 'error');
+                }
+            } catch (error) {
+                displayOutput('api-output', `❌ Invalid login test error: ${error.message}`, 'error');
+                log(`Invalid login test error: ${error.message}`, 'error');
+            }
+        }
+
+        // Socket Tests
+        function testSocketConnection() {
+            displayOutput('socket-output', 'Testing socket connection...', 'info');
+            
+            try {
+                if (socket) {
+                    socket.disconnect();
+                }
+                
+                socket = io();
+                
+                socket.on('connect', () => {
+                    displayOutput('socket-output', `✅ Socket connected with ID: ${socket.id}`, 'success');
+                    log(`Socket connected: ${socket.id}`, 'success');
+                });
+                
+                socket.on('disconnect', () => {
+                    displayOutput('socket-output', '🔌 Socket disconnected', 'warning');
+                    log('Socket disconnected', 'warning');
+                });
+                
+                socket.on('connect_error', (error) => {
+                    displayOutput('socket-output', `❌ Socket connection error: ${error.message}`, 'error');
+                    log(`Socket connection error: ${error.message}`, 'error');
+                });
+                
+            } catch (error) {
+                displayOutput('socket-output', `❌ Socket test error: ${error.message}`, 'error');
+                log(`Socket test error: ${error.message}`, 'error');
+            }
+        }
+
+        function testSocketAuth() {
+            const sessionToken = localStorage.getItem('sessionToken');
+            const username = localStorage.getItem('username');
+            
+            if (!sessionToken || !username) {
+                displayOutput('socket-output', '❌ No session found. Run Login API test first.', 'error');
+                return;
+            }
+            
+            displayOutput('socket-output', `Testing socket authentication for ${username}...`, 'info');
+            
+            if (!socket || !socket.connected) {
+                displayOutput('socket-output', '❌ Socket not connected. Run Socket Connection test first.', 'error');
+                return;
+            }
+            
+            // Set up auth response listeners
+            socket.on('authenticationSuccess', (data) => {
+                displayOutput('socket-output', `✅ Socket authentication successful: ${data.message}`, 'success');
+                log(`Socket auth success for ${username}`, 'success');
+            });
+            
+            socket.on('authenticationFailed', (data) => {
+                displayOutput('socket-output', `❌ Socket authentication failed: ${data.message}`, 'error');
+                log(`Socket auth failed for ${username}: ${data.message}`, 'error');
+            });
+            
+            // Send authentication request
+            socket.emit('authenticate', { 
+                login: username, 
+                sessionToken: sessionToken 
+            });
+            
+            log(`Socket auth request sent for ${username}`, 'info');
+        }
+
+        function testInvalidSocketAuth() {
+            displayOutput('socket-output', 'Testing invalid socket authentication...', 'info');
+            
+            if (!socket || !socket.connected) {
+                displayOutput('socket-output', '❌ Socket not connected. Run Socket Connection test first.', 'error');
+                return;
+            }
+            
+            socket.emit('authenticate', { 
+                login: 'invalid_user', 
+                sessionToken: 'invalid_token_12345' 
+            });
+            
+            log('Invalid socket auth request sent', 'info');
+        }
+
+        function disconnectSocket() {
+            if (socket) {
+                socket.disconnect();
+                socket = null;
+                displayOutput('socket-output', '🔌 Socket manually disconnected', 'warning');
+                log('Socket manually disconnected', 'warning');
+            } else {
+                displayOutput('socket-output', '⚠️ No socket to disconnect', 'warning');
+            }
+        }
+
+        // Integration Tests
+        async function runFullTest() {
+            displayOutput('integration-output', '🚀 Starting full authentication flow test...', 'info');
+            
+            try {
+                // Step 1: Clear existing data
+                clearAllData();
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
+                // Step 2: Test API login
+                displayOutput('integration-output', 'Step 1: Testing API login...', 'info');
+                await testLoginAPI();
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                // Step 3: Connect socket
+                displayOutput('integration-output', 'Step 2: Connecting socket...', 'info');
+                testSocketConnection();
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                // Step 4: Authenticate socket
+                displayOutput('integration-output', 'Step 3: Authenticating socket...', 'info');
+                testSocketAuth();
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                displayOutput('integration-output', '✅ Full authentication flow test completed', 'success');
+                log('Full authentication flow test completed', 'success');
+                
+            } catch (error) {
+                displayOutput('integration-output', `❌ Full test error: ${error.message}`, 'error');
+                log(`Full test error: ${error.message}`, 'error');
+            }
+        }
+
+        async function simulateDoubleLogin() {
+            displayOutput('integration-output', '👥 Simulating double login scenario...', 'info');
+            
+            try {
+                // First login
+                displayOutput('integration-output', 'First login attempt...', 'info');
+                await testLoginAPI();
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                testSocketConnection();
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                testSocketAuth();
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                // Second login (should invalidate first)
+                displayOutput('integration-output', 'Second login attempt (should invalidate first)...', 'warning');
+                await testLoginAPI();
+                
+                displayOutput('integration-output', '✅ Double login simulation completed', 'success');
+                log('Double login simulation completed', 'success');
+                
+            } catch (error) {
+                displayOutput('integration-output', `❌ Double login test error: ${error.message}`, 'error');
+                log(`Double login test error: ${error.message}`, 'error');
+            }
+        }
+
+        // Debug Functions
+        function showDebugInfo() {
+            const debugInfo = {
+                timestamp: new Date().toISOString(),
+                testDuration: Date.now() - testStartTime,
+                localStorage: {
+                    sessionToken: localStorage.getItem('sessionToken'),
+                    username: localStorage.getItem('username')
+                },
+                socketState: socket ? {
+                    id: socket.id,
+                    connected: socket.connected,
+                    transport: socket.io?.engine?.transport?.name
+                } : null,
+                browserInfo: {
+                    userAgent: navigator.userAgent,
+                    language: navigator.language,
+                    platform: navigator.platform
+                },
+                totalLogs: testLogs.length
+            };
+            
+            displayOutput('debug-output', `<pre>${JSON.stringify(debugInfo, null, 2)}</pre>`, 'info');
+            log('Debug info displayed', 'info');
+        }
+
+        function exportLogs() {
+            const logData = {
+                testSession: {
+                    startTime: new Date(testStartTime).toISOString(),
+                    endTime: new Date().toISOString(),
+                    duration: Date.now() - testStartTime
+                },
+                logs: testLogs,
+                systemInfo: {
+                    userAgent: navigator.userAgent,
+                    language: navigator.language,
+                    platform: navigator.platform,
+                    url: window.location.href
+                }
+            };
+            
+            const blob = new Blob([JSON.stringify(logData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `auth_test_logs_${Date.now()}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            displayOutput('debug-output', '📄 Test logs exported to file', 'success');
+            log('Test logs exported', 'info');
+        }
+
+        // Initialize
+        log('Debug console initialized', 'info');
+        displayOutput('system-status', '🛠️ Debug console ready. Click "Check System Status" to begin.', 'info');
+    </script>
+</body>
+</html>

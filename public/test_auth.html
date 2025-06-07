@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Authentication Test</title>
+</head>
+<body>
+    <h1>Simple Authentication Test</h1>
+    <div>
+        <input type="text" id="username" placeholder="Username" value="123">
+        <input type="password" id="password" placeholder="Password" value="123">
+        <button onclick="testLogin()">Test Login</button>
+        <button onclick="testRegister()">Test Register</button>
+    </div>
+    <div id="results"></div>
+
+    <script>
+        async function testLogin() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const results = document.getElementById('results');
+            
+            console.log('Testing login with:', username, password);
+            results.innerHTML = 'Testing login...';
+            
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ login: username, password: password })
+                });
+                
+                console.log('Response status:', response.status);
+                console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('Login successful:', data);
+                    results.innerHTML = `<p style="color: green;">Login successful!</p><pre>${JSON.stringify(data, null, 2)}</pre>`;
+                } else {
+                    const errorData = await response.json();
+                    console.log('Login failed:', errorData);
+                    results.innerHTML = `<p style="color: red;">Login failed!</p><pre>${JSON.stringify(errorData, null, 2)}</pre>`;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                results.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+            }
+        }
+        
+        async function testRegister() {
+            const username = document.getElementById('username').value + '_new';
+            const password = document.getElementById('password').value;
+            const results = document.getElementById('results');
+            
+            console.log('Testing register with:', username, password);
+            results.innerHTML = 'Testing register...';
+            
+            try {
+                const response = await fetch('/api/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ login: username, password: password })
+                });
+                
+                console.log('Response status:', response.status);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('Register successful:', data);
+                    results.innerHTML = `<p style="color: green;">Register successful!</p><pre>${JSON.stringify(data, null, 2)}</pre>`;
+                } else {
+                    const errorData = await response.json();
+                    console.log('Register failed:', errorData);
+                    results.innerHTML = `<p style="color: red;">Register failed!</p><pre>${JSON.stringify(errorData, null, 2)}</pre>`;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                results.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+            }
+        }
+        
+        console.log('Authentication test page loaded');
+    </script>
+</body>
+</html>
