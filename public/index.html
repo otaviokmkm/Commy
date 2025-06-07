@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MMORPG Tático com Overworld</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Replace Tailwind CSS CDN with locally compiled CSS -->
+    <link href="/public/tailwind.css" rel="stylesheet">
     <script src="/socket.io/socket.io.js"></script>
     <style>
         body {
@@ -239,9 +240,9 @@
 
     <script>
         // --- Multiplayer: Socket.IO instance ---
-        const socket = io(); 
-        let localPlayerId = null; 
-        let otherPlayers = {}; 
+        const socket = io(); // Conecta ao servidor Socket.IO (mesmo host/porta por padrão)
+        let localPlayerId = null; // Será definido após login/conexão
+        let otherPlayers = {}; // Armazena dados de outros jogadores: { playerId: {x, y, name, color, mapId} }
 
 
         // --- Autenticação: Modal de Login/Cadastro ---
@@ -270,7 +271,7 @@
                     const data = await res.json();
                     saveSession(data.token, username);
                     player.name = username;
-                    localPlayerId = username; 
+                    localPlayerId = username; // Multiplayer: Define o ID do jogador local
                     hideAuthModal();
                     startGameAfterAuth();
                 } else {
@@ -278,6 +279,7 @@
                     setAuthError(errorData.error || 'Usuário ou senha inválidos.');
                 }
             } catch (error) {
+                // console.error("Erro no login:", error);
                 setAuthError('Erro de conexão ao tentar fazer login.');
             }
         });
@@ -295,6 +297,7 @@
                     body: JSON.stringify({ login: username, password })
                 });
                 if (res.ok) {
+                    // Após cadastro, faz login automático
                     const loginRes = await fetch('/api/login', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -304,7 +307,7 @@
                         const loginData = await loginRes.json();
                         saveSession(loginData.token, username);
                         player.name = username;
-                        localPlayerId = username; 
+                        localPlayerId = username; // Multiplayer: Define o ID do jogador local
                         hideAuthModal();
                         startGameAfterAuth();
                     } else {
@@ -316,10 +319,12 @@
                     setAuthError(msg);
                 }
             } catch (error) {
+                // console.error("Erro no cadastro:", error);
                 setAuthError('Erro de conexão ao tentar cadastrar.');
             }
         });
 
+        // Logout (botão no painel do jogador)
         function addLogoutButton() {
             let btn = document.getElementById('logout-btn');
             if (!btn) {
@@ -328,35 +333,37 @@
                 btn.textContent = 'Sair';
                 btn.className = 'action-button w-full bg-red-600 hover:bg-red-700 mt-3';
                 btn.onclick = async () => {
-                    if (socket && localPlayerId) { 
+                    if (socket && localPlayerId) { // Multiplayer: Notifica o servidor sobre a saída
                         socket.emit('playerDisconnecting', { playerId: localPlayerId, mapId: currentMapId });
                     }
                     clearSession();
                     localPlayerId = null;
                     otherPlayers = {};
                     showAuthModal();
-                    location.reload(); 
+                    location.reload(); // Recarrega a página para limpar o estado do jogo
                 };
                 playerInfoOverworldPanel.appendChild(btn);
             }
         }
 
+        // Bloqueia inicialização do jogo até autenticar
         let gameInitialized = false;
         function startGameAfterAuth() {
             if (gameInitialized) return;
             gameInitialized = true;
             player.name = getSession().username || 'Aventureiro';
-            if (!localPlayerId && player.name !== 'Aventureiro') { 
+            if (!localPlayerId && player.name !== 'Aventureiro') { // Garante que localPlayerId seja definido
                 localPlayerId = player.name;
             }
             addLogoutButton();
-            initGame(); 
+            initGame(); // initGame agora também configura os listeners do socket
         }
 
+        // Ao carregar a página, verifica sessão
         document.addEventListener('DOMContentLoaded', () => {
             const session = getSession();
             if (session.token && session.username) {
-                localPlayerId = session.username; 
+                localPlayerId = session.username; // Multiplayer: Define o ID do jogador local
                 hideAuthModal();
                 startGameAfterAuth();
             } else {
@@ -364,6 +371,7 @@
             }
         });
 
+        // --- Elementos do DOM ---
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const gameContainer = document.getElementById('game-container');
@@ -372,32 +380,46 @@
         const chatMessages = document.getElementById('chat-messages');
         const gameLogMessage = document.getElementById('gameLogMessage');
         const statusInfoDisplay = document.getElementById('statusInfo');
+
         const playerNameOverworldDisplay = document.getElementById('playerNameOverworld');
         const playerHPOverworldDisplay = document.getElementById('playerHPOverworld');
         const playerGoldOverworldDisplay = document.getElementById('playerGoldOverworld');
+        
         const playerAPCombatDisplay = document.getElementById('playerAPCombat');
         const playerMPCombatDisplay = document.getElementById('playerMPCombat');
         const combatUiPanel = document.getElementById('combat-ui-panel');
         const playerInfoOverworldPanel = document.getElementById('player-info-overworld');
+
+
         const moveButton = document.getElementById('moveButton');
         const attackButton = document.getElementById('attackButton');
         const endTurnButton = document.getElementById('endTurnButton');
 
+        // --- Configurações do Jogo ---
         const TILE_SIZE = 40; 
         let GRID_COLS, GRID_ROWS; 
+        
         let gameState = 'overworld'; 
         const HOTBAR_SLOTS = 5; 
-        let currentMapId = 'mapa1'; 
+        let currentMapId = 'mapa1'; // Mapa inicial
         let lastAiUpdateTime = 0;
         const AI_UPDATE_INTERVAL = 500; 
+
+        // --- Open World (grande) ---
         const OPEN_WORLD_ID = 'open_world';
         const OPEN_WORLD_SIZE = 200;
-        let openWorldMap = null; 
-        let openWorldEnemies = []; // Inimigos específicos do mundo aberto
+        let openWorldMap = null; // 2D array
+        let openWorldEnemies = [];
         let cameraX = 0, cameraY = 0;
         let cameraWidth = 0, cameraHeight = 0;
 
-        const MAP_TILES = { EMPTY: 0, OBSTACLE_ROCK: 1, DECORATION_TREE: 2, DECORATION_BUSH: 3 };
+        // --- Dados do Mapa Overworld ---
+        const MAP_TILES = {
+            EMPTY: 0,
+            OBSTACLE_ROCK: 1,
+            DECORATION_TREE: 2,
+            DECORATION_BUSH: 3,
+        };
         const mapConnections = {
             'mapa1': { right: 'mapa2' },
             'mapa2': { left: 'mapa1', right: 'mapa_chefe' },
@@ -405,42 +427,15 @@
         };
 
         let mapData = []; 
-        // Cache para os layouts de mapa gerados (ou recebidos do servidor)
-        const mapLayoutCache = {};
 
-        const mapInitialEnemies = {
-            mapa1: [
-                { id: 1, originalOverworldX: 8, originalOverworldY: 5, data: { combatStats: { maxHp: 100 }, aggroRange: 5 } },
-                // Add more enemies here
-            ],
-            mapa2: [],
-            mapa_chefe: [],
-        };
+        function generateMapFor(mapId) {
+            // Multiplayer: Idealmente, para mapas aleatórios, o servidor enviaria
+            // a semente ou o layout do mapa. Aqui, continuamos com a geração local
+            // para fins de demonstração da estrutura do cliente.
+            // Se o servidor enviar 'mapLayoutData' no evento 'mapState', usaríamos isso.
 
-
-        function generateMapFor(mapId, serverMapLayout = null) {
-            // Se o servidor fornecer um layout, use-o (para persistência e sincronização)
-            if (serverMapLayout) {
-                if (mapId === OPEN_WORLD_ID) {
-                    openWorldMap = serverMapLayout;
-                } else {
-                    mapLayoutCache[mapId] = serverMapLayout;
-                }
-                mapData = serverMapLayout;
-                // console.log(`Mapa ${mapId} carregado do servidor.`);
-                return;
-            }
-
-            // Se já existe um layout em cache para este mapaId (exceto open_world que tem seu próprio cache)
-            if (mapId !== OPEN_WORLD_ID && mapLayoutCache[mapId]) {
-                mapData = mapLayoutCache[mapId];
-                // console.log(`Mapa ${mapId} carregado do cache do cliente.`);
-                return;
-            }
-            
-            // Geração local como fallback ou para mapas não persistentes entre sessões (se não vier do servidor)
             if (mapId === OPEN_WORLD_ID) {
-                if (!openWorldMap) { // Gera o mapa do mundo aberto apenas uma vez por sessão do cliente
+                if (!openWorldMap) { // Gera o mapa do mundo aberto apenas uma vez
                     openWorldMap = [];
                     for (let r = 0; r < OPEN_WORLD_SIZE; r++) {
                         openWorldMap[r] = [];
@@ -456,18 +451,17 @@
                             }
                         }
                     }
-                    // Inimigos do mundo aberto são gerados aqui também, mas idealmente o servidor gerenciaria seus estados e respawns.
+                    // Multiplayer: A geração de inimigos para o mundo aberto também deve ser
+                    // consistente ou gerenciada pelo servidor. Por enquanto, deixamos como está.
                     openWorldEnemies = []; 
                     for (let i = 0; i < 40; i++) {
                         let placed = false;
                         while (!placed) {
                             let x = 2 + Math.floor(Math.random() * (OPEN_WORLD_SIZE - 4));
                             let y = 2 + Math.floor(Math.random() * (OPEN_WORLD_SIZE - 4));
-                            // Garante que o inimigo não spawne em cima de um obstáculo já definido
-                            if (openWorldMap[y] && openWorldMap[y][x] === MAP_TILES.EMPTY) {
+                            if (openWorldMap[y][x] === MAP_TILES.EMPTY) {
                                 openWorldEnemies.push({
                                     id: 1000 + i, 
-                                    originalOverworldX: x, originalOverworldY: y, // Guarda posição original para respawn
                                     overworldX: x, overworldY: y,
                                     aggroRange: 5 + Math.floor(Math.random() * 5),
                                     isAliveOverworld: true,
@@ -484,15 +478,14 @@
                             }
                         }
                     }
-                    // console.log(`Mapa ${OPEN_WORLD_ID} gerado localmente.`);
                 }
                 mapData = openWorldMap;
             } else { // Mapas menores
-                const newMapLayout = [];
+                mapData = [];
                 if (GRID_ROWS <= 0 || GRID_COLS <= 0) return; 
                 for (let r = 0; r < GRID_ROWS; r++) {
-                    newMapLayout[r] = [];
-                    for (let c = 0; c < GRID_COLS; c++) newMapLayout[r][c] = MAP_TILES.EMPTY;
+                    mapData[r] = [];
+                    for (let c = 0; c < GRID_COLS; c++) mapData[r][c] = MAP_TILES.EMPTY;
                 }
                 for (let r = 0; r < GRID_ROWS; r++) {
                     for (let c = 0; c < GRID_COLS; c++) {
@@ -503,38 +496,35 @@
                             else if (r === GRID_ROWS - 1 && connections.down) isConnectionTile = true;
                             else if (c === 0 && connections.left) isConnectionTile = true;
                             else if (c === GRID_COLS - 1 && connections.right) isConnectionTile = true;
-                            if (!isConnectionTile) newMapLayout[r][c] = MAP_TILES.OBSTACLE_ROCK;
+                            if (!isConnectionTile) mapData[r][c] = MAP_TILES.OBSTACLE_ROCK;
                         }
                     }
                 }
                 let rockDensity = 0.05, decorDensity = 0.1;
                 if (mapId === 'mapa_chefe') { rockDensity = 0.1; decorDensity = 0.05; }
-                for (let r = 1; r < GRID_ROWS - 1; r++) {
+                for (let r = 1; r < GRID_ROWS - 1; r++) { 
                     for (let c = 1; c < GRID_COLS - 1; c++) {
                         let isEntitySpawn = (r === player.overworldY && c === player.overworldX);
                         if (!isEntitySpawn) {
-                            for (const enemy of enemies) { 
+                            for (const enemy of enemies) { // Usa a lista 'enemies' para mapas normais
                                 if (enemy.mapId === mapId && enemy.isAliveOverworld && enemy.overworldY === r && enemy.overworldX === c) {
                                     isEntitySpawn = true; break;
                                 }
                             }
                         }
                         if (isEntitySpawn) continue; 
-                        if (Math.random() < rockDensity) newMapLayout[r][c] = MAP_TILES.OBSTACLE_ROCK;
-                        else if (Math.random() < decorDensity) newMapLayout[r][c] = Math.random() < 0.5 ? MAP_TILES.DECORATION_TREE : MAP_TILES.DECORATION_BUSH;
+                        if (Math.random() < rockDensity) mapData[r][c] = MAP_TILES.OBSTACLE_ROCK;
+                        else if (Math.random() < decorDensity) mapData[r][c] = Math.random() < 0.5 ? MAP_TILES.DECORATION_TREE : MAP_TILES.DECORATION_BUSH;
                     }
                 }
-                if (isValidOverworldTile(player.overworldX, player.overworldY) && newMapLayout[player.overworldY]) { 
-                    newMapLayout[player.overworldY][player.overworldX] = MAP_TILES.EMPTY;
+                if (isValidOverworldTile(player.overworldX, player.overworldY) && mapData[player.overworldY]) { 
+                    mapData[player.overworldY][player.overworldX] = MAP_TILES.EMPTY;
                 }
                 enemies.forEach(enemy => {
                     if (enemy.mapId === mapId && enemy.isAliveOverworld && isValidOverworldTile(enemy.overworldX, enemy.overworldY)) {
-                        if(newMapLayout[enemy.overworldY]) newMapLayout[enemy.overworldY][enemy.overworldX] = MAP_TILES.EMPTY;
+                        if(mapData[enemy.overworldY]) mapData[enemy.overworldY][enemy.overworldX] = MAP_TILES.EMPTY;
                     }
                 });
-                mapData = newMapLayout;
-                mapLayoutCache[mapId] = newMapLayout; // Cacheia o layout gerado localmente
-                // console.log(`Mapa ${mapId} gerado e cacheado localmente.`);
             }
         }
 
@@ -543,7 +533,7 @@
             overworldX: 1, overworldY: 1, 
             gridX: 0, gridY: 0,
             size: TILE_SIZE * 0.8,
-            color: 'deepskyblue', 
+            color: 'deepskyblue', // Cor padrão do jogador local
             hp: 100, maxHp: 100,
             ap: 60, maxAp: 60,
             mp: 30, maxMp: 30,
@@ -554,27 +544,26 @@
             gold: 0,
         };
 
-        // Inimigos: Adicionar originalOverworldX/Y para respawn
-        let enemies = JSON.parse(JSON.stringify(mapInitialEnemies[mapId] || [])).map(enemyConfig => ({
-            id: enemyConfig.id,
-            originalOverworldX: enemyConfig.originalOverworldX,
-            originalOverworldY: enemyConfig.originalOverworldY,
-            overworldX: enemyConfig.originalOverworldX,
-            overworldY: enemyConfig.originalOverworldY,
-            isAliveOverworld: true,
-            hp: enemyConfig.data.combatStats.maxHp,
-            combatStats: enemyConfig.data.combatStats,
-            aggroRange: enemyConfig.data.aggroRange,
-            respawnTimer: null,
-        }));
+        let enemies = [ 
+            { id: 1, mapId: 'mapa1', overworldX: 8, overworldY: 5, aggroRange: 4, isAliveOverworld: true, combatStats: { size: TILE_SIZE * 0.8, color: 'tomato', hp: 70, maxHp: 70, ap: 4, maxAp: 4, mp: 2, maxMp: 2, attackPower: 10, attackRange: 1, name: "Goblin Batedor", loot: { gold: 10 } } },
+            { id: 2, mapId: 'mapa1', overworldX: 12, overworldY: 10, aggroRange: 4, isAliveOverworld: true, combatStats: { size: TILE_SIZE * 0.8, color: 'tomato', hp: 70, maxHp: 70, ap: 4, maxAp: 4, mp: 2, maxMp: 2, attackPower: 10, attackRange: 1, name: "Goblin Batedor", loot: { gold: 10 } } },
+            { id: 3, mapId: 'mapa2', overworldX: 3, overworldY: 8, aggroRange: 5, isAliveOverworld: true, combatStats: { size: TILE_SIZE * 0.85, color: 'darkorange', hp: 90, maxHp: 90, ap: 5, maxAp: 5, mp: 3, maxMp: 3, attackPower: 12, attackRange: 1, name: "Orc Brutamontes", loot: { gold: 15 } } },
+            { id: 4, mapId: 'mapa2', overworldX: 10, overworldY: 4, aggroRange: 5, isAliveOverworld: true, combatStats: { size: TILE_SIZE * 0.85, color: 'darkorange', hp: 90, maxHp: 90, ap: 5, maxAp: 5, mp: 3, maxMp: 3, attackPower: 12, attackRange: 1, name: "Orc Brutamontes", loot: { gold: 15 } } },
+            { id: 5, mapId: 'mapa_chefe', overworldX: 10, overworldY: 7, aggroRange: 7, isAliveOverworld: true, combatStats: { size: TILE_SIZE * 1.2, color: 'purple', hp: 200, maxHp: 200, ap: 6, maxAp: 6, mp: 3, maxMp: 3, attackPower: 25, attackRange: 2, name: "Rei Goblin", loot: { gold: 100 } } },
+            { id: -1, mapId: 'combate_apenas', overworldX: -1, overworldY: -1, isAliveOverworld: false, combatStats: { size: TILE_SIZE * 0.7, color: 'crimson', hp: 50, maxHp: 50, ap: 4, maxAp: 4, mp: 2, maxMp: 2, attackPower: 8, attackRange: 1, name: "Guarda Goblin" } },
+        ];
         let activeCombatEnemy = null; 
 
         let currentTurn = 'player'; 
         let selectedAction = null; 
         let highlightedTiles = []; 
 
+        // --- Inicialização ---
         function initGame() {
-            if (!ctx) { return; }
+            if (!ctx) {
+                // console.error("Contexto do canvas não encontrado. O jogo não pode ser iniciado.");
+                return;
+            }
             resizeCanvas(); 
             window.addEventListener('resize', resizeCanvas);
             window.addEventListener('keydown', handleGlobalKeyDown); 
@@ -584,108 +573,112 @@
             endTurnButton.addEventListener('click', endPlayerTurn);
             chatInput.addEventListener('keypress', handleChatInput);
             createHotbarSlots(); 
+
+            // Multiplayer: Configurar listeners do Socket.IO
             setupSocketListeners();
+
             gameLoop(); 
         }
 
+        // Multiplayer: Função para configurar listeners do Socket.IO
         function setupSocketListeners() {
-            if (!socket) { return; }
+            if (!socket) {
+                // console.error("Socket não inicializado.");
+                return;
+            }
+
             socket.on('connect', () => {
-                if (localPlayerId) { loadMap(currentMapId); }
+                // console.log('Conectado ao servidor com socket ID:', socket.id);
+                if (localPlayerId) { 
+                    loadMap(currentMapId); 
+                }
             });
+
             socket.on('mapState', (data) => {
                 if (data.mapId === currentMapId) {
                     otherPlayers = {}; 
                     data.players.forEach(p => {
                         if (p.playerId !== localPlayerId) {
-                            otherPlayers[p.playerId] = { x: p.x, y: p.y, name: p.name || `P-${p.playerId.slice(0,4)}`, color: p.color || '#ccc', mapId: p.mapId };
+                            otherPlayers[p.playerId] = {
+                                x: p.x,
+                                y: p.y,
+                                name: p.name || `Jogador ${p.playerId.substring(0,4)}`,
+                                color: p.color || '#cccccc', 
+                                mapId: p.mapId 
+                            };
                         }
                     });
-                    // Multiplayer: Atualizar 'mapData' ou 'openWorldMap' se o servidor enviar layout/seed
-                    if (data.mapLayout) { // Assumindo que o servidor pode enviar 'mapLayout'
-                        if (currentMapId === OPEN_WORLD_ID) {
-                            openWorldMap = data.mapLayout;
-                        } else {
-                            mapLayoutCache[currentMapId] = data.mapLayout;
-                        }
-                        mapData = data.mapLayout;
-                        // console.log(`Layout do mapa ${currentMapId} recebido do servidor e aplicado.`);
-                    }
-                    // Multiplayer: Atualizar estado dos inimigos com base nos dados do servidor
-                    if (data.enemies) { // Assumindo que o servidor envia uma lista de inimigos com seu estado
-                        const currentEnemyList = (currentMapId === OPEN_WORLD_ID) ? openWorldEnemies : enemies;
-                        data.enemies.forEach(serverEnemy => {
-                            const clientEnemy = currentEnemyList.find(e => e.id === serverEnemy.id);
-                            if (clientEnemy) {
-                                clientEnemy.isAliveOverworld = serverEnemy.isAliveOverworld;
-                                clientEnemy.overworldX = serverEnemy.overworldX;
-                                clientEnemy.overworldY = serverEnemy.overworldY;
-                                clientEnemy.combatStats.hp = serverEnemy.hp; // Sincronizar HP atual
-                            } else if (currentMapId === OPEN_WORLD_ID) { // Adicionar novo inimigo do mundo aberto se não existir
-                                openWorldEnemies.push({ ...serverEnemy, originalOverworldX: serverEnemy.overworldX, originalOverworldY: serverEnemy.overworldY });
-                            }
-                        });
-                    }
+                    // console.log('Estado do mapa recebido:', currentMapId, otherPlayers);
+                    // Multiplayer: Se o servidor enviar dados do mapa (seed ou layout),
+                    // você usaria isso para atualizar 'mapData' ou 'openWorldMap' aqui.
+                    // Ex: if (data.mapLayout) mapData = data.mapLayout;
+                    // Ex: if (data.mapSeed) generateMapFor(currentMapId, data.mapSeed);
                 }
             });
+
             socket.on('playerJoined', (newPlayerData) => {
                 if (newPlayerData.mapId === currentMapId && newPlayerData.playerId !== localPlayerId) {
-                    otherPlayers[newPlayerData.playerId] = { x: newPlayerData.x, y: newPlayerData.y, name: newPlayerData.name || `P-${newPlayerData.playerId.slice(0,4)}`, color: newPlayerData.color || '#ccc', mapId: newPlayerData.mapId };
+                    otherPlayers[newPlayerData.playerId] = {
+                        x: newPlayerData.x,
+                        y: newPlayerData.y,
+                        name: newPlayerData.name || `Jogador ${newPlayerData.playerId.substring(0,4)}`,
+                        color: newPlayerData.color || '#cccccc',
+                        mapId: newPlayerData.mapId
+                    };
                     addChatMessage('[Sistema]', `${otherPlayers[newPlayerData.playerId].name} entrou no mapa.`);
+                    // console.log('Jogador entrou:', newPlayerData.playerId, "em", newPlayerData.mapId);
                 }
             });
+
             socket.on('playerMoved', (moveData) => {
                 if (moveData.mapId === currentMapId && moveData.playerId !== localPlayerId) {
                     if (otherPlayers[moveData.playerId]) {
                         otherPlayers[moveData.playerId].x = moveData.x;
                         otherPlayers[moveData.playerId].y = moveData.y;
                     } else {
-                        otherPlayers[moveData.playerId] = { x: moveData.x, y: moveData.y, name: `P-${moveData.playerId.slice(0,4)}`, color: '#ccc', mapId: moveData.mapId };
+                        otherPlayers[moveData.playerId] = {
+                            x: moveData.x, y: moveData.y, name: `Jogador ${moveData.playerId.substring(0,4)}`, color: '#cccccc', mapId: moveData.mapId
+                        };
                     }
+                    // console.log('Jogador moveu:', moveData.playerId, "para", moveData.x, moveData.y);
                 }
             });
+
             socket.on('playerLeft', (leaveData) => {
                 if (leaveData.mapId === currentMapId && otherPlayers[leaveData.playerId]) {
-                    addChatMessage('[Sistema]', `${otherPlayers[leaveData.playerId].name || 'Um jogador'} saiu.`);
+                    addChatMessage('[Sistema]', `${otherPlayers[leaveData.playerId].name || 'Um jogador'} saiu do mapa.`);
                     delete otherPlayers[leaveData.playerId];
+                    // console.log('Jogador saiu:', leaveData.playerId);
                 }
             });
+            
             socket.on('chatMessage', (data) => {
                 if (data.senderId !== localPlayerId) { 
                     addChatMessage(data.senderName, data.message);
                 }
             });
-            socket.on('enemyRespawned', (respawnedEnemyData) => {
-                if (respawnedEnemyData.mapId === currentMapId) {
-                    const enemyList = (currentMapId === OPEN_WORLD_ID) ? openWorldEnemies : enemies;
-                    const enemyToRespawn = enemyList.find(e => e.id === respawnedEnemyData.id);
-                    if (enemyToRespawn) {
-                        enemyToRespawn.isAliveOverworld = true;
-                        enemyToRespawn.overworldX = respawnedEnemyData.overworldX || enemyToRespawn.originalOverworldX; // Usa posição do servidor ou original
-                        enemyToRespawn.overworldY = respawnedEnemyData.overworldY || enemyToRespawn.originalOverworldY;
-                        enemyToRespawn.combatStats.hp = enemyToRespawn.combatStats.maxHp; // Restaura HP
-                        logGameMessage(`${enemyToRespawn.combatStats.name} reapareceu!`, 2000);
-                    } else if (currentMapId === OPEN_WORLD_ID) { // Se for um inimigo do mundo aberto que não estava na lista (pode acontecer)
-                        openWorldEnemies.push({
-                            ...respawnedEnemyData, // Assume que o servidor envia todos os dados necessários
-                            originalOverworldX: respawnedEnemyData.overworldX,
-                            originalOverworldY: respawnedEnemyData.overworldY,
-                            isAliveOverworld: true
-                        });
-                         logGameMessage(`${respawnedEnemyData.combatStats.name} reapareceu!`, 2000);
-                    }
-                }
-            });
+
             socket.on('disconnect', () => {
+                // console.log('Desconectado do servidor.');
                 addChatMessage('[Sistema]', 'Você foi desconectado.');
                 otherPlayers = {}; 
             });
+
+            socket.on('combatStarted', (data) => {
+                console.log(`[DEBUG] Received combatStarted event:`, data);
+                const { opponent } = data;
+                activeCombatEnemy = opponent;
+                gameState = 'combat';
+                logGameMessage(`Combate iniciado com ${opponent.combatStats.name}!`, 3000);
+                initiateCombat(opponent);
+            });
         }
+
 
         function loadMap(mapId, entrySide) {
             const oldMapId = currentMapId;
             currentMapId = mapId;
-            otherPlayers = {}; 
+            otherPlayers = {}; // Multiplayer: Limpa os jogadores do mapa antigo ao mudar de mapa
 
             if (mapId === OPEN_WORLD_ID) {
                 player.overworldX = Math.floor(OPEN_WORLD_SIZE / 2);
@@ -694,8 +687,6 @@
                 cameraY = player.overworldY;
                 cameraWidth = Math.floor(canvas.width / TILE_SIZE);
                 cameraHeight = Math.floor(canvas.height / TILE_SIZE);
-                // Para o mundo aberto, a geração/cache é tratada em generateMapFor
-                generateMapFor(currentMapId); 
             } else {
                 if (GRID_COLS <= 0 || GRID_ROWS <= 0) { 
                     player.overworldX = 0; player.overworldY = 0;
@@ -715,12 +706,12 @@
                 } else { 
                     player.overworldX = 1; player.overworldY = 1;
                 }
-                // Gera (ou carrega do cache) o mapa menor
-                generateMapFor(currentMapId); 
             }
+            generateMapFor(currentMapId); 
             updateUIBasedOnState();
             updatePlayerOverworldInfo();
 
+            // Multiplayer: Notifica o servidor sobre a mudança de mapa
             if (socket && localPlayerId && gameInitialized) {
                 if (oldMapId && oldMapId !== currentMapId) { 
                     socket.emit('leaveMap', { playerId: localPlayerId, mapId: oldMapId });
@@ -733,6 +724,7 @@
                     name: player.name,
                     color: player.color 
                 });
+                // console.log(`Emitindo joinMap: ${currentMapId}, Player: ${localPlayerId}`);
             }
         }
 
@@ -779,6 +771,7 @@
             }
         }
 
+        // --- Lógica de Estados de Jogo e UI ---
         function updateUIBasedOnState() {
             if (gameState === 'overworld') {
                 combatUiPanel.style.display = 'none';
@@ -832,8 +825,8 @@
             activeCombatEnemy.gridY = Math.max(0, Math.min(activeCombatEnemy.gridY, GRID_ROWS > 0 ? GRID_ROWS - 1 : 0));
 
             activeCombatEnemy.hp = activeCombatEnemy.combatStats.maxHp; 
-            activeCombatEnemy.ap = activeCombatEnemy.combatStats.ap || activeCombatEnemy.combatStats.maxAp; 
-            activeCombatEnemy.mp = activeCombatEnemy.combatStats.mp || activeCombatEnemy.combatStats.maxMp;
+            activeCombatEnemy.ap = activeCombatEnemy.combatStats.ap; 
+            activeCombatEnemy.mp = activeCombatEnemy.combatStats.mp;
             activeCombatEnemy.isAliveCombat = true; 
             
             updateUIBasedOnState();
@@ -846,22 +839,22 @@
                 logGameMessage(`Você derrotou ${activeCombatEnemy.combatStats.name}! Recebeu ${loot.gold}g.`, 3000);
                 player.gold += loot.gold;
                 
-                const enemyList = (currentMapId === OPEN_WORLD_ID) ? openWorldEnemies : enemies;
-                const originalEnemy = enemyList.find(e => e.id === activeCombatEnemy.id);
-                if(originalEnemy) {
-                    originalEnemy.isAliveOverworld = false; 
-                    // Multiplayer: O cliente pode notificar o servidor, ou o servidor gerencia respawn timers.
-                    // socket.emit('requestEnemyRespawn', { enemyId: originalEnemy.id, mapId: currentMapId });
-                }
+                // Multiplayer: Informar o servidor que o inimigo foi derrotado (se gerenciado pelo servidor)
+                // socket.emit('enemyDefeated', { enemyId: activeCombatEnemy.id, mapId: currentMapId });
+
+                // Marca o inimigo como morto no overworld (se for um inimigo da lista 'enemies')
+                const originalEnemyList = (currentMapId === OPEN_WORLD_ID) ? openWorldEnemies : enemies;
+                const originalEnemy = originalEnemyList.find(e => e.id === activeCombatEnemy.id);
+                if(originalEnemy) originalEnemy.isAliveOverworld = false; 
                 
                 player.hp = player.maxHp; 
                 if (activeCombatEnemy.combatStats.name === 'Rei Goblin') {
                     setTimeout(() => {
                         logGameMessage('Você derrotou o Rei Goblin! O portal para o mundo aberto se abre...', 3500);
                         setTimeout(() => {
-                            currentMapId = OPEN_WORLD_ID; 
+                            currentMapId = OPEN_WORLD_ID; // Define para o mundo aberto
                             gameState = 'overworld';
-                            loadMap(OPEN_WORLD_ID); 
+                            loadMap(OPEN_WORLD_ID); // Carrega o mundo aberto
                         }, 3500);
                     }, 1000);
                     activeCombatEnemy = null;
@@ -878,6 +871,8 @@
             updatePlayerOverworldInfo();
         }
 
+
+        // --- Lógica de Turnos (Combate) ---
         function startPlayerTurn() {
             currentTurn = 'player';
             selectedAction = null;
@@ -969,6 +964,7 @@
             return false;
         }
 
+        // --- Ações e Input ---
         function handleGlobalKeyDown(e) {
             if (document.activeElement === chatInput) return; 
             if (gameState === 'overworld' && player.isAlive) handleOverworldKeyDown(e);
@@ -999,9 +995,10 @@
                         return;
                     }
                 }
+                // Multiplayer: Verificar colisão com outros jogadores no mundo aberto
                 for (const pId in otherPlayers) {
                     if (otherPlayers[pId].mapId === OPEN_WORLD_ID && otherPlayers[pId].x === newX && otherPlayers[pId].y === newY) {
-                        return; 
+                        return; // Bloqueia movimento se outro jogador estiver lá
                     }
                 }
                 if (openWorldMap && openWorldMap[newY] && openWorldMap[newY][newX] !== MAP_TILES.OBSTACLE_ROCK) {
@@ -1010,7 +1007,7 @@
                     cameraX = player.overworldX;
                     cameraY = player.overworldY;
                 }
-            } else { 
+            } else { // Mapas normais
                 const newOverworldX = player.overworldX + dx;
                 const newOverworldY = player.overworldY + dy;
                 const connections = mapConnections[currentMapId] || {};
@@ -1025,9 +1022,10 @@
                         return; 
                     }
                 }
+                // Multiplayer: Verificar colisão com outros jogadores em mapas normais
                 for (const pId in otherPlayers) {
                     if (otherPlayers[pId].mapId === currentMapId && otherPlayers[pId].x === newOverworldX && otherPlayers[pId].y === newOverworldY) {
-                        return; 
+                        return; // Bloqueia movimento
                     }
                 }
                 if (mapData && mapData.length > newOverworldY && mapData[newOverworldY] && mapData[newOverworldY].length > newOverworldX && mapData[newOverworldY][newOverworldX] !== MAP_TILES.OBSTACLE_ROCK) {
@@ -1035,6 +1033,7 @@
                     player.overworldY = newOverworldY;
                 }
             }
+            // Multiplayer: Emitir movimento se a posição mudou
             if ((player.overworldX !== prevPlayerX || player.overworldY !== prevPlayerY) && socket && localPlayerId) {
                 socket.emit('playerMoved', {
                     playerId: localPlayerId,
@@ -1044,6 +1043,7 @@
                 });
             }
         }
+        // --- Open World Camera/Tile helpers ---
         function isValidOpenWorldTile(x, y) {
             return x >= 0 && x < OPEN_WORLD_SIZE && y >= 0 && y < OPEN_WORLD_SIZE;
         }
@@ -1119,6 +1119,26 @@
                 if (!isValidCombatTile(gridX, gridY)) return;
                 if (selectedAction === 'move') handleMoveActionCombat(gridX, gridY);
                 else if (selectedAction === 'attack') handleAttackActionCombat(gridX, gridY);
+            } else if (gameState === 'overworld' && player.isAlive) {
+                // Multiplayer: Check if a player was clicked
+                for (const playerId in otherPlayers) {
+                    const otherPlayer = otherPlayers[playerId];
+                    if (
+                        otherPlayer.mapId === currentMapId &&
+                        otherPlayer.x === gridX &&
+                        otherPlayer.y === gridY
+                    ) {
+                        console.log(`Clicked on player: ${otherPlayer.name} (ID: ${playerId})`);
+                        // Emit initiateCombat event to the server
+                        socket.emit('initiateCombat', {
+                            attackerId: localPlayerId,
+                            defenderId: playerId,
+                            mapId: currentMapId
+                        });
+                        logGameMessage(`Você desafiou ${otherPlayer.name} para um combate!`, 3000);
+                        return;
+                    }
+                }
             }
         }
 
@@ -1192,20 +1212,19 @@
                                 initiateCombat(enemy);
                                 movedThisTick = true; 
                             } else if (isValidOverworldTile(nextX, nextY) && mapData[nextY] && mapData[nextY][nextX] !== MAP_TILES.OBSTACLE_ROCK) {
-                                let isOccupiedByOtherEntity = false;
+                                let isOccupiedByOtherEnemy = false;
                                 for (const otherEnemy of enemies) {
                                     if (otherEnemy !== enemy && otherEnemy.isAliveOverworld && otherEnemy.mapId === currentMapId && otherEnemy.overworldX === nextX && otherEnemy.overworldY === nextY) {
-                                        isOccupiedByOtherEntity = true; break;
+                                        isOccupiedByOtherEnemy = true; break;
                                     }
                                 }
-                                if (!isOccupiedByOtherEntity) {
-                                    for (const pId in otherPlayers) {
-                                        if (otherPlayers[pId].mapId === OPEN_WORLD_ID && otherPlayers[pId].x === nextX && otherPlayers[pId].y === nextY) {
-                                            isOccupiedByOtherEntity = true; break;
-                                        }
+                                // Multiplayer: Check against other players as well
+                                for (const pId in otherPlayers) {
+                                    if (otherPlayers[pId].mapId === currentMapId && otherPlayers[pId].x === nextX && otherPlayers[pId].y === nextY) {
+                                        isOccupiedByOtherEnemy = true; break;
                                     }
                                 }
-                                if (!isOccupiedByOtherEntity) {
+                                if (!isOccupiedByOtherEnemy) {
                                     enemy.overworldX = nextX;
                                     movedThisTick = true;
                                 }
@@ -1218,22 +1237,20 @@
 
                             if (nextX === player.overworldX && nextY === player.overworldY) {
                                 initiateCombat(enemy);
-                                movedThisTick = true; 
+                                movedThisTick = true;
                             } else if (isValidOverworldTile(nextX, nextY) && mapData[nextY] && mapData[nextY][nextX] !== MAP_TILES.OBSTACLE_ROCK) {
-                                let isOccupiedByOtherEntity = false;
+                                let isOccupiedByOtherEnemy = false;
                                 for (const otherEnemy of enemies) {
                                     if (otherEnemy !== enemy && otherEnemy.isAliveOverworld && otherEnemy.mapId === currentMapId && otherEnemy.overworldX === nextX && otherEnemy.overworldY === nextY) {
-                                        isOccupiedByOtherEntity = true; break;
+                                        isOccupiedByOtherEnemy = true; break;
                                     }
                                 }
-                                if (!isOccupiedByOtherEntity) {
-                                     for (const pId in otherPlayers) {
-                                        if (otherPlayers[pId].mapId === OPEN_WORLD_ID && otherPlayers[pId].x === nextX && otherPlayers[pId].y === nextY) {
-                                            isOccupiedByOtherEntity = true; break;
-                                        }
+                                for (const pId in otherPlayers) {
+                                     if (otherPlayers[pId].mapId === currentMapId && otherPlayers[pId].x === nextX && otherPlayers[pId].y === nextY) {
+                                        isOccupiedByOtherEnemy = true; break;
                                     }
                                 }
-                                if (!isOccupiedByOtherEntity) {
+                                if (!isOccupiedByOtherEnemy) {
                                     enemy.overworldY = nextY;
                                     movedThisTick = true;
                                 }
@@ -1244,8 +1261,12 @@
             });
         }
 
+
+        // --- Desenho ---
         function gameLoop() {
-            if (!ctx) { return; }
+            if (!ctx) {
+                return; 
+            }
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             if (gameState === 'overworld') {
                 if (currentMapId === OPEN_WORLD_ID) {
@@ -1330,7 +1351,7 @@
                 for (let c = 0; c < cameraWidth; c++) {
                     let mapY = camTop + r;
                     let mapX = camLeft + c;
-                    if (!isValidOpenWorldTile(mapX, mapY) || !openWorldMap || !openWorldMap[mapY]) continue; 
+                    if (!isValidOpenWorldTile(mapX, mapY) || !openWorldMap || !openWorldMap[mapY]) continue; // Check if openWorldMap and row exist
 
                     const tileType = openWorldMap[mapY][mapX];
                     const x = c * TILE_SIZE, y = r * TILE_SIZE;
@@ -1358,6 +1379,7 @@
                     }
                 }
             });
+            // Multiplayer: Desenhar outros jogadores no mundo aberto
             for (const playerId in otherPlayers) {
                 const p = otherPlayers[playerId];
                 if (p.mapId === OPEN_WORLD_ID) {
@@ -1382,7 +1404,7 @@
             ctx.fillRect(pixelX, pixelY, size, size);
 
             if (name) {
-                ctx.fillStyle = isEnemy ? '#fca5a5' : '#93c5fd'; 
+                ctx.fillStyle = isEnemy ? '#fca5a5' : '#93c5fd'; // Cor diferente para nome de inimigo e jogador
                 ctx.font = '10px Inter, sans-serif';
                 ctx.textAlign = 'center';
                 ctx.fillText(name, pixelX + size / 2, pixelY - 5);
@@ -1397,9 +1419,10 @@
                     drawOverworldEntity(enemy.overworldX, enemy.overworldY, enemy.combatStats.color, enemy.combatStats.size, enemy.combatStats.name, true); 
                 }
             });
+            // Multiplayer: Desenhar outros jogadores em mapas normais
             for (const playerId in otherPlayers) {
                 const p = otherPlayers[playerId];
-                if (p.mapId === currentMapId && p.playerId !== localPlayerId) { 
+                if (p.mapId === currentMapId && p.playerId !== localPlayerId) { // Garante que não desenhe o jogador local como "outro"
                     drawOverworldEntity(p.x, p.y, p.color, TILE_SIZE * 0.8, p.name);
                 }
             }
@@ -1415,7 +1438,7 @@
                 for (let c = 0; c < GRID_COLS; c++) {
                     const tileType = mapData[r][c];
                     const x = c * TILE_SIZE, y = r * TILE_SIZE;
-                    switch (tileType) {
+                    switch ( tileType) {
                         case MAP_TILES.OBSTACLE_ROCK: ctx.fillStyle = '#848b98'; ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE); break;
                         case MAP_TILES.DECORATION_TREE:
                             ctx.fillStyle = '#225336'; ctx.fillRect(x + TILE_SIZE * 0.2, y + TILE_SIZE * 0.5, TILE_SIZE * 0.6, TILE_SIZE * 0.5); 
@@ -1431,6 +1454,8 @@
                 }
             }
         }
+
+        // drawOverworldEntity já foi definida e modificada para incluir nome e flag 'isEnemy'
 
         function drawCombat() {
             drawGrid();
@@ -1461,6 +1486,7 @@
             const hpBarWidth = displaySize, hpBarHeight = 6, hpBarX = pixelX, hpBarY = pixelY - hpBarHeight - 3, hpRatio = maxHp > 0 ? hp / maxHp : 0;
             ctx.fillStyle = '#4b5563'; ctx.fillRect(hpBarX, hpBarY, hpBarWidth, hpBarHeight);
             ctx.fillStyle = isEnemy ? 'red' : 'limegreen'; ctx.fillRect(hpBarX, hpBarY, hpBarWidth * hpRatio, hpBarHeight);
+            // Multiplayer: Desenhar nome do personagem em combate
             if (combatStats.name) {
                 ctx.fillStyle = isEnemy ? '#fca5a5' : '#93c5fd';
                 ctx.font = '10px Inter, sans-serif';
@@ -1482,14 +1508,20 @@
         function handleChatInput(event) { 
             if (event.key === 'Enter' && chatInput.value.trim() !== '') { 
                 const message = chatInput.value.trim();
-                addChatMessage(player.name, message); 
+                console.log(`[DEBUG] Sending chat message: ${message}`);
+                addChatMessage(player.name, message); // Mostra a mensagem localmente imediatamente
+
+                // Multiplayer: Envia mensagem para o servidor
                 if (socket && localPlayerId) {
                     socket.emit('chatMessage', {
                         senderId: localPlayerId,
                         senderName: player.name,
                         message: message,
-                        mapId: currentMapId 
+                        mapId: currentMapId // Envia o mapId para que o servidor possa rotear para a sala correta
                     });
+                    console.log(`[DEBUG] Emitted chatMessage event to server: ${message}`);
+                } else {
+                    console.log(`[DEBUG] Socket or localPlayerId is not defined`);
                 }
                 chatInput.value = ''; 
                 event.stopPropagation(); 
@@ -1497,20 +1529,18 @@
         }
         function addChatMessage(sender, message) { const p = document.createElement('p'); const esc = (str) => { const d=document.createElement('div'); d.appendChild(document.createTextNode(str)); return d.innerHTML; }; p.innerHTML = `<span class="font-semibold ${sender === player.name ? 'text-green-300' : 'text-sky-300'}">[${esc(sender)}]:</span> ${esc(message)}`; chatMessages.appendChild(p); chatMessages.scrollTop = chatMessages.scrollHeight; }
 
+        // --- Patch: Remove defeated open world monsters ---
         const _oldEndCombat = endCombat;
         endCombat = function(victory) {
-            if (activeCombatEnemy && victory) { // Verifique se activeCombatEnemy não é null
-                 const enemyList = (currentMapId === OPEN_WORLD_ID) ? openWorldEnemies : enemies;
-                 const originalEnemy = enemyList.find(e => e.id === activeCombatEnemy.id);
-                 if(originalEnemy) {
-                    originalEnemy.isAliveOverworld = false; 
-                    // O servidor deve gerenciar o respawn. O cliente pode apenas notificar a derrota.
-                    // socket.emit('enemyDefeated', { enemyId: originalEnemy.id, mapId: currentMapId });
-                 }
+            if (currentMapId === OPEN_WORLD_ID && activeCombatEnemy && victory) {
+                const idx = openWorldEnemies.findIndex(e => e.id === activeCombatEnemy.id);
+                if (idx !== -1) openWorldEnemies[idx].isAliveOverworld = false;
             }
-            _oldEndCombat.apply(this, arguments); // Chama a função original de endCombat
+            _oldEndCombat.apply(this, arguments);
         }
 
+        // --- Iniciar o Jogo ---
+        // A inicialização é chamada por startGameAfterAuth após o login
     </script>
 </body>
 </html>
