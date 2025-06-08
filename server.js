@@ -368,6 +368,7 @@ const OPEN_WORLD_ID = 'open_world';
 const OPEN_WORLD_SIZE = 200; // Should match client if client generates fallback
 const DEFAULT_GRID_COLS = 20; // Default for smaller maps if not specified
 const DEFAULT_GRID_ROWS = 15; // Default for smaller maps if not specified
+const TILE_SIZE = 40; // Match client TILE_SIZE
 
 
 // --- Game State Management (Server-Side) ---
@@ -393,7 +394,117 @@ const AUTO_SAVE_CONFIG = {
     }
 };
 
-// Player statistics tracking structure
+// --- Party System ---
+const parties = new Map(); // Map<partyId, party>
+const playerParties = new Map(); // Map<playerId, partyId>
+let partyIdCounter = 1;
+
+function createParty(leaderId, leaderName) {
+    const partyId = `party_${partyIdCounter++}`;
+    const party = {
+        id: partyId,
+        leader: leaderId,
+        leaderName: leaderName,
+        members: [{ id: leaderId, name: leaderName }],
+        created: Date.now(),
+        maxMembers: 4 // Maximum party size
+    };
+    
+    parties.set(partyId, party);
+    playerParties.set(leaderId, partyId);
+    
+    console.log(`🎉 Party ${partyId} created by ${leaderName} (${leaderId})`);
+    return party;
+}
+
+function getParty(partyId) {
+    return parties.get(partyId);
+}
+
+function getPlayerParty(playerId) {
+    const partyId = playerParties.get(playerId);
+    return partyId ? parties.get(partyId) : null;
+}
+
+function addToParty(partyId, playerId, playerName) {
+    const party = parties.get(partyId);
+    if (!party) return false;
+    
+    if (party.members.length >= party.maxMembers) {
+        return { success: false, error: 'Party is full' };
+    }
+    
+    if (party.members.find(m => m.id === playerId)) {
+        return { success: false, error: 'Player already in party' };
+    }
+    
+    party.members.push({ id: playerId, name: playerName });
+    playerParties.set(playerId, partyId);
+    
+    console.log(`👋 ${playerName} (${playerId}) joined party ${partyId}`);
+    return { success: true, party };
+}
+
+function removeFromParty(partyId, playerId) {
+    const party = parties.get(partyId);
+    if (!party) return null;
+    
+    const memberIndex = party.members.findIndex(m => m.id === playerId);
+    if (memberIndex === -1) return null;
+    
+    const removedMember = party.members[memberIndex];
+    party.members.splice(memberIndex, 1);
+    playerParties.delete(playerId);
+    
+    // If party is empty, disband it
+    if (party.members.length === 0) {
+        parties.delete(partyId);
+        console.log(`💥 Party ${partyId} disbanded (no members left)`);
+        return { disbanded: true, removedMember };
+    }
+    
+    // If leader left, promote next member to leader
+    if (party.leader === playerId && party.members.length > 0) {
+        const newLeader = party.members[0];
+        party.leader = newLeader.id;
+        party.leaderName = newLeader.name;
+        console.log(`👑 ${newLeader.name} (${newLeader.id}) is now leader of party ${partyId}`);
+    }
+    
+    console.log(`👋 ${removedMember.name} (${playerId}) left party ${partyId}`);
+    return { party, removedMember, newLeader: party.leader !== playerId ? { id: party.leader, name: party.leaderName } : null };
+}
+
+function disbandParty(partyId) {
+    const party = parties.get(partyId);
+    if (!party) return null;
+    
+    // Remove all members from party tracking
+    party.members.forEach(member => {
+        playerParties.delete(member.id);
+    });
+    
+    parties.delete(partyId);
+    console.log(`💥 Party ${partyId} disbanded by leader`);
+    return party;
+}
+
+function kickFromParty(partyId, kickerId, targetId) {
+    const party = parties.get(partyId);
+    if (!party) return { success: false, error: 'Party not found' };
+    
+    if (party.leader !== kickerId) {
+        return { success: false, error: 'Only party leader can kick members' };
+    }
+    
+    if (targetId === kickerId) {
+        return { success: false, error: 'Cannot kick yourself' };
+    }
+    
+    return removeFromParty(partyId, targetId);
+}
+
+// --- Game Logic ---
 function initializePlayerStats(login) {
     if (!playerStats[login]) {
         playerStats[login] = {
@@ -645,14 +756,260 @@ const serverGeneratedMapLayouts = {}; // Store generated layouts
 // Ensure mapInitialEnemies is properly initialized with persistent open world enemies
 const mapInitialEnemies = {}; 
 
-// Generate persistent enemies for open world using seeded random
+// Forest-themed enemy types for open world  
+const FOREST_ENEMY_TYPES = [
+    {
+        name: "Lobo Selvagem",
+        color: '#8B4513',
+        size: TILE_SIZE * 0.75,
+        hp: 35,
+        maxHp: 35,
+        ap: 3,
+        maxAp: 3,
+        mp: 2,
+        maxMp: 2,
+        attackPower: 12,
+        attackRange: 1,
+        aggroRange: 4,
+        experience: 15,
+        loot: { gold: 8 }
+    },
+    {
+        name: "Goblin Explorador",
+        color: '#228B22',
+        size: TILE_SIZE * 0.65,
+        hp: 25,
+        maxHp: 25,
+        ap: 2,
+        maxAp: 2,
+        mp: 3,
+        maxMp: 3,
+        attackPower: 8,
+        attackRange: 1,
+        aggroRange: 3,
+        experience: 12,
+        loot: { gold: 5 }
+    },
+    {
+        name: "Urso da Floresta",
+        color: '#654321',
+        size: TILE_SIZE * 0.9,
+        hp: 60,
+        maxHp: 60,
+        ap: 5,
+        maxAp: 5,
+        mp: 1,
+        maxMp: 1,
+        attackPower: 18,
+        attackRange: 1,
+        aggroRange: 2,
+        experience: 25,
+        loot: { gold: 15 }
+    },
+    {
+        name: "Aranha Gigante",
+        color: '#2F4F2F',
+        size: TILE_SIZE * 0.8,
+        hp: 40,
+        maxHp: 40,
+        ap: 4,
+        maxAp: 4,
+        mp: 3,
+        maxMp: 3,
+        attackPower: 14,
+        attackRange: 1,
+        aggroRange: 3,
+        experience: 18,
+        loot: { gold: 10 }
+    },
+    {
+        name: "Orc Bárbaro",
+        color: '#556B2F',
+        size: TILE_SIZE * 0.85,
+        hp: 55,
+        maxHp: 55,
+        ap: 4,
+        maxAp: 4,
+        mp: 2,
+        maxMp: 2,
+        attackPower: 16,
+        attackRange: 1,
+        aggroRange: 5,
+        experience: 22,
+        loot: { gold: 12 }
+    },
+    {
+        name: "Treant Jovem",
+        color: '#6B8E23',
+        size: TILE_SIZE * 0.95,
+        hp: 80,
+        maxHp: 80,
+        ap: 3,
+        maxAp: 3,
+        mp: 1,
+        maxMp: 1,
+        attackPower: 20,
+        attackRange: 2,
+        aggroRange: 2,
+        experience: 30,
+        loot: { gold: 18 }
+    },
+    {
+        name: "Javali Feroz",
+        color: '#8B7355',
+        size: TILE_SIZE * 0.7,
+        hp: 45,
+        maxHp: 45,
+        ap: 5,
+        maxAp: 5,
+        mp: 2,
+        maxMp: 2,
+        attackPower: 15,
+        attackRange: 1,
+        aggroRange: 4,
+        experience: 20,
+        loot: { gold: 9 }
+    },
+    {
+        name: "Cobra Venenosa",
+        color: '#9ACD32',
+        size: TILE_SIZE * 0.6,
+        hp: 30,
+        maxHp: 30,
+        ap: 3,
+        maxAp: 3,
+        mp: 4,
+        maxMp: 4,
+        attackPower: 10,
+        attackRange: 1,
+        aggroRange: 3,
+        experience: 14,
+        loot: { gold: 6 }
+    },
+    {
+        name: "Bandido da Floresta",
+        color: '#8FBC8F',
+        size: TILE_SIZE * 0.75,
+        hp: 50,
+        maxHp: 50,
+        ap: 4,
+        maxAp: 4,
+        mp: 3,
+        maxMp: 3,
+        attackPower: 17,
+        attackRange: 2,
+        aggroRange: 6,
+        experience: 24,
+        loot: { gold: 14 }
+    },
+    {
+        name: "Coruja Gigante",
+        color: '#F4A460',
+        size: TILE_SIZE * 0.8,
+        hp: 35,
+        maxHp: 35,
+        ap: 6,
+        maxAp: 6,
+        mp: 4,
+        maxMp: 4,
+        attackPower: 13,
+        attackRange: 3,
+        aggroRange: 5,
+        experience: 16,
+        loot: { gold: 7 }
+    },
+    {
+        name: "Escorpião Gigante",
+        color: '#B8860B',
+        size: TILE_SIZE * 0.8,
+        hp: 50,
+        maxHp: 50,
+        ap: 4,
+        maxAp: 4,
+        mp: 2,
+        maxMp: 2,
+        attackPower: 16,
+        attackRange: 1,
+        aggroRange: 4,
+        experience: 20,
+        loot: { gold: 11 }
+    },
+    {
+        name: "Druida Sombrio",
+        color: '#8B008B',
+        size: TILE_SIZE * 0.8,
+        hp: 65,
+        maxHp: 65,
+        ap: 3,
+        maxAp: 3,
+        mp: 5,
+        maxMp: 5,
+        attackPower: 18,
+        attackRange: 3,
+        aggroRange: 6,
+        experience: 28,
+        loot: { gold: 16 }
+    },
+    {
+        name: "Lobo Alfa",
+        color: '#696969',
+        size: TILE_SIZE * 0.9,
+        hp: 75,
+        maxHp: 75,
+        ap: 4,
+        maxAp: 4,
+        mp: 3,
+        maxMp: 3,
+        attackPower: 22,
+        attackRange: 1,
+        aggroRange: 7,
+        experience: 32,
+        loot: { gold: 20 }
+    },
+    {
+        name: "Mantícora Jovem",
+        color: '#CD853F',
+        size: TILE_SIZE * 0.9,
+        hp: 70,
+        maxHp: 70,
+        ap: 5,
+        maxAp: 5,
+        mp: 2,
+        maxMp: 2,
+        attackPower: 19,
+        attackRange: 2,
+        aggroRange: 5,
+        experience: 30,
+        loot: { gold: 18 }
+    },
+    {
+        name: "Fada Negra",
+        color: '#4B0082',
+        size: TILE_SIZE * 0.6,
+        hp: 40,
+        maxHp: 40,
+        ap: 2,
+        maxAp: 2,
+        mp: 6,
+        maxMp: 6,
+        attackPower: 12,
+        attackRange: 4,
+        aggroRange: 8,
+        experience: 22,
+        loot: { gold: 13 }
+    }
+];
+
+// Use diverse enemy types for generation
 function generateOpenWorldEnemies() {
     const enemies = [];
     const rng = new SeededRandom(OPEN_WORLD_SEED + 1000); // Different seed for enemies
     
-    for (let i = 0; i < 40; i++) {
+    // Increased enemy count for more populated world
+    for (let i = 0; i < 80; i++) { // Doubled from 40 to 80 base spawn points
         let placed = false;
         let attempts = 0;
+        
         while (!placed && attempts < 100) { // Prevent infinite loop
             let x = 2 + Math.floor(rng.next() * (OPEN_WORLD_SIZE - 4));
             let y = 2 + Math.floor(rng.next() * (OPEN_WORLD_SIZE - 4));
@@ -660,29 +1017,48 @@ function generateOpenWorldEnemies() {
             // Check if position is empty (we'll validate against the generated map)
             const mapLayout = serverGeneratedMapLayouts[OPEN_WORLD_ID];
             if (mapLayout && mapLayout[y] && mapLayout[y][x] === MAP_TILES.EMPTY) {
-                const colors = ['#eab308', '#f87171', '#34d399', '#818cf8'];
-                enemies.push({
-                    id: 1000 + i,
-                    originalOverworldX: x,
-                    originalOverworldY: y,
-                    data: {
-                        aggroRange: 5 + Math.floor(rng.next() * 5),
-                        combatStats: {
-                            size: 18, // TILE_SIZE * 0.9 equivalent
-                            color: colors[i % 4],
-                            hp: 60 + Math.floor(rng.next() * 60),
-                            maxHp: 60 + Math.floor(rng.next() * 60),
-                            ap: 4 + Math.floor(rng.next() * 3),
-                            maxAp: 4 + Math.floor(rng.next() * 3),
-                            mp: 2 + Math.floor(rng.next() * 2),
-                            maxMp: 2 + Math.floor(rng.next() * 2),
-                            attackPower: 10 + Math.floor(rng.next() * 10),
-                            attackRange: 1,
-                            name: 'Monstro Selvagem',
-                            loot: { gold: 10 + Math.floor(rng.next() * 20) }
-                        }
+                // Select random enemy type from the diverse forest types
+                const enemyType = FOREST_ENEMY_TYPES[Math.floor(rng.next() * FOREST_ENEMY_TYPES.length)];
+                
+                // Generate 2-4 enemies per spawn point for more density
+                const enemiesPerPoint = 2 + Math.floor(rng.next() * 3); // 2-4 enemies
+                for (let j = 0; j < enemiesPerPoint; j++) {
+                    // Find a spot within 8 tiles (moderate spread)
+                    let offsetX = -8 + Math.floor(rng.next() * 17); // -8 to +8
+                    let offsetY = -8 + Math.floor(rng.next() * 17); // -8 to +8
+                    let newX = Math.max(2, Math.min(OPEN_WORLD_SIZE - 3, x + offsetX));
+                    let newY = Math.max(2, Math.min(OPEN_WORLD_SIZE - 3, y + offsetY));
+                    
+                    // Verify the new spot is empty
+                    if (mapLayout[newY] && mapLayout[newY][newX] === MAP_TILES.EMPTY) {
+                        // Add slight stat variation (±20%)
+                        const statVariation = 0.8 + (rng.next() * 0.4); // 0.8 to 1.2 multiplier
+                        
+                        enemies.push({
+                            id: 1000 + (i * 5) + j, // Unique ID for each enemy
+                            originalOverworldX: newX,
+                            originalOverworldY: newY,
+                            data: {
+                                aggroRange: Math.max(2, Math.floor(enemyType.aggroRange * statVariation)),
+                                combatStats: {
+                                    size: enemyType.size,
+                                    color: enemyType.color,
+                                    hp: Math.floor(enemyType.hp * statVariation),
+                                    maxHp: Math.floor(enemyType.maxHp * statVariation),
+                                    ap: Math.max(1, Math.floor(enemyType.ap * statVariation)),
+                                    maxAp: Math.max(1, Math.floor(enemyType.maxAp * statVariation)),
+                                    mp: Math.max(1, Math.floor(enemyType.mp * statVariation)),
+                                    maxMp: Math.max(1, Math.floor(enemyType.maxMp * statVariation)),
+                                    attackPower: Math.max(5, Math.floor(enemyType.attackPower * statVariation)),
+                                    attackRange: enemyType.attackRange,
+                                    name: enemyType.name,
+                                    experience: Math.floor(enemyType.experience * statVariation),
+                                    loot: { gold: Math.max(1, Math.floor(enemyType.loot.gold * statVariation)) }
+                                }
+                            }
+                        });
                     }
-                });
+                }
                 placed = true;
             }
             attempts++;
@@ -732,7 +1108,7 @@ for (const mapId in mapConnections) {
 // Debugging: Log the value of mapInitialEnemies[mapId] for troubleshooting
 console.log('mapInitialEnemies:', mapInitialEnemies);
 
-const ENEMY_RESPAWN_TIME = 30000; // 30 segundos
+const ENEMY_RESPAWN_TIME = 120000; // 2 minutos (120 segundos)
 
 // Server-side monster AI system
 const MONSTER_AI_UPDATE_INTERVAL = 1000; // 1 second
@@ -1213,8 +1589,10 @@ io.on('connection', (socket) => {
                     });
                 }
             }
-        }
-    });    socket.on('enemyDefeated', (data) => { 
+        }    });
+
+    // Handle enemy defeated (when player wins combat)
+    socket.on('enemyDefeated', (data) => {
         const { enemyId, mapId, playerData } = data;
         if (maps[mapId] && maps[mapId].enemies) {
             const enemy = maps[mapId].enemies.find(e => e.id === enemyId);
@@ -1260,7 +1638,8 @@ io.on('connection', (socket) => {
                     enemy.respawnTimer = null;
                 }, ENEMY_RESPAWN_TIME);
             }
-        }    });
+        }
+    });
 
     // Handle enemy combat start
     socket.on('enemyCombatStarted', (data) => {
@@ -1345,6 +1724,34 @@ io.on('connection', (socket) => {
                         });
                     }
                 });
+            }
+              // Party cleanup - remove player from party if they were in one
+            const playerParty = getPlayerParty(player.id);
+            if (playerParty) {
+                console.log(`Player ${player.name} (${player.id}) was in party ${playerParty.id}, removing...`);
+                const result = removeFromParty(playerParty.id, player.id);
+                
+                if (result) {
+                    if (result.disbanded) {
+                        console.log(`💥 Party ${playerParty.id} disbanded when ${player.name} disconnected`);
+                    } else {
+                        // Notify remaining party members
+                        result.party.members.forEach(member => {
+                            const memberSocket = Object.values(io.sockets.sockets).find(s => players[s.id]?.id === member.id);
+                            if (memberSocket) {
+                                memberSocket.emit('partyMemberLeft', {
+                                    playerId: player.id,
+                                    playerName: player.name,
+                                    disconnected: true,
+                                    newLeader: result.newLeader?.id,
+                                    newLeaderName: result.newLeader?.name,
+                                    party: result.party
+                                });
+                            }
+                        });
+                        console.log(`👋 Notified party members that ${player.name} disconnected`);
+                    }
+                }
             }
             
             // Remove player data
@@ -1590,11 +1997,11 @@ io.on('connection', (socket) => {
                     ...stats,
                     exploration: {
                         ...stats.exploration,
-                        mapsVisited: Array.from(stats.exploration.mapsVisited),
+                        mapsVisited: Array.from(stats.exploration.mapsVisited || [])
                     },
                     achievements: {
                         ...stats.achievements,
-                        firstTimeAchievements: Array.from(stats.achievements.firstTimeAchievements)
+                        firstTimeAchievements: Array.from(stats.achievements.firstTimeAchievements || [])
                     }
                 };
                 socket.emit('playerStatsUpdate', serializedStats);
@@ -1602,9 +2009,310 @@ io.on('connection', (socket) => {
         }
     });
 
-    // Disconnect handler
-    socket.on('disconnect', () => {
-        handleDisconnect(socket);
+    // --- Party System Socket Handlers ---
+    socket.on('createParty', (data) => {
+        const { playerId } = data;
+        const player = players[socket.id];
+        
+        if (!player) {
+            socket.emit('partyError', { message: 'Player not found' });
+            return;
+        }
+        
+        // Check if player is already in a party
+        if (getPlayerParty(playerId)) {
+            socket.emit('partyError', { message: 'You are already in a party' });
+            return;
+        }
+        
+        const party = createParty(playerId, player.name);
+        socket.emit('partyCreated', { party });
+        
+        console.log(`🎉 [PARTY] ${player.name} created party ${party.id}`);
+    });    socket.on('createPartyAndInvite', (data) => {
+        console.log(`🔍 [PARTY DEBUG] createPartyAndInvite received:`, data);
+        const { playerId, targetPlayerName } = data;
+        const player = players[socket.id];
+        
+        console.log(`🔍 [PARTY DEBUG] Player lookup - Socket ID: ${socket.id}, Player: ${player ? player.name : 'NOT FOUND'}`);
+        
+        if (!player) {
+            console.log(`❌ [PARTY DEBUG] Player not found for socket ${socket.id}`);
+            socket.emit('partyError', { message: 'Player not found' });
+            return;
+        }
+          // Check if player is already in a party
+        const existingParty = getPlayerParty(playerId);
+        console.log(`🔍 [PARTY DEBUG] Existing party check - Player ${player.name} (${playerId}) has party: ${existingParty ? existingParty.id : 'NONE'}`);
+        
+        if (existingParty) {
+            console.log(`❌ [PARTY DEBUG] Player ${player.name} already in party ${existingParty.id}`);
+            socket.emit('partyError', { message: 'You are already in a party' });
+            return;
+        }
+        
+        // Find target player
+        console.log(`🔍 [PARTY DEBUG] Looking for target player: '${targetPlayerName}'`);
+        console.log(`🔍 [PARTY DEBUG] Available players:`, Object.values(players).map(p => p.name));
+        const targetPlayer = Object.values(players).find(p => p.name === targetPlayerName);
+        console.log(`🔍 [PARTY DEBUG] Target player found: ${targetPlayer ? `${targetPlayer.name} (${targetPlayer.id})` : 'NOT FOUND'}`);
+        
+        if (!targetPlayer) {
+            console.log(`❌ [PARTY DEBUG] Target player '${targetPlayerName}' not found`);
+            socket.emit('partyError', { message: `Player '${targetPlayerName}' not found` });
+            return;
+        }
+        
+        // Check if target is already in a party
+        const targetExistingParty = getPlayerParty(targetPlayer.id);
+        console.log(`🔍 [PARTY DEBUG] Target existing party check - Player ${targetPlayer.name} has party: ${targetExistingParty ? targetExistingParty.id : 'NONE'}`);
+        
+        if (targetExistingParty) {
+            console.log(`❌ [PARTY DEBUG] Target ${targetPlayerName} already in party ${targetExistingParty.id}`);
+            socket.emit('partyError', { message: `${targetPlayerName} is already in a party` });
+            return;
+        }
+          const party = createParty(playerId, player.name);
+        console.log(`🎉 [PARTY DEBUG] Party created successfully: ${party.id} by ${player.name}`);
+        socket.emit('partyCreated', { party });
+        console.log(`📤 [PARTY DEBUG] Sent 'partyCreated' event to creator ${player.name}`);
+        
+        // Send invite to target player
+        console.log(`🔍 [PARTY DEBUG] Looking for target socket for player ${targetPlayer.name} (${targetPlayer.id})`);
+        const targetSocket = Object.values(io.sockets.sockets).find(s => players[s.id]?.id === targetPlayer.id);
+        console.log(`🔍 [PARTY DEBUG] Target socket found: ${targetSocket ? 'YES' : 'NO'}`);
+        
+        if (targetSocket) {
+            const inviteData = {
+                from: playerId,
+                fromName: player.name,
+                partyId: party.id
+            };
+            console.log(`📤 [PARTY DEBUG] Sending 'partyInviteReceived' to ${targetPlayer.name}:`, inviteData);
+            targetSocket.emit('partyInviteReceived', inviteData);
+            
+            const sentConfirmation = { targetName: targetPlayerName };
+            console.log(`📤 [PARTY DEBUG] Sending 'partyInviteSent' confirmation to ${player.name}:`, sentConfirmation);
+            socket.emit('partyInviteSent', sentConfirmation);
+        } else {
+            console.log(`❌ [PARTY DEBUG] Target ${targetPlayerName} socket not found - player offline`);
+            socket.emit('partyError', { message: `${targetPlayerName} is not online` });
+        }
+        
+        console.log(`🎉 [PARTY] ${player.name} created party ${party.id} and invited ${targetPlayerName}`);
+    });    socket.on('inviteToParty', (data) => {
+        console.log(`🔍 [PARTY DEBUG] inviteToParty received:`, data);
+        const { playerId, partyId, targetPlayerName } = data;
+        const player = players[socket.id];
+        const party = getParty(partyId);
+        
+        console.log(`🔍 [PARTY DEBUG] Player lookup - Socket ID: ${socket.id}, Player: ${player ? player.name : 'NOT FOUND'}`);
+        console.log(`🔍 [PARTY DEBUG] Party lookup - Party ID: ${partyId}, Party: ${party ? `${party.id} (${party.leaderName})` : 'NOT FOUND'}`);
+        
+        if (!player || !party) {
+            console.log(`❌ [PARTY DEBUG] Player or party not found - Player: ${!!player}, Party: ${!!party}`);
+            socket.emit('partyError', { message: 'Party or player not found' });
+            return;
+        }
+        
+        // Check if player is party leader
+        if (party.leader !== playerId) {
+            socket.emit('partyError', { message: 'Only party leader can invite players' });
+            return;
+        }
+        
+        // Find target player
+        const targetPlayer = Object.values(players).find(p => p.name === targetPlayerName);
+        if (!targetPlayer) {
+            socket.emit('partyError', { message: `Player '${targetPlayerName}' not found` });
+            return;
+        }
+        
+        // Check if target is already in a party
+        if (getPlayerParty(targetPlayer.id)) {
+            socket.emit('partyError', { message: `${targetPlayerName} is already in a party` });
+            return;
+        }
+        
+        // Check if party is full
+        if (party.members.length >= party.maxMembers) {
+            socket.emit('partyError', { message: 'Party is full' });
+            return;
+        }
+        
+        // Send invite to target player
+        const targetSocket = Object.values(io.sockets.sockets).find(s => players[s.id]?.id === targetPlayer.id);
+        if (targetSocket) {
+            targetSocket.emit('partyInviteReceived', {
+                from: playerId,
+                fromName: player.name,
+                partyId: partyId
+            });
+            socket.emit('partyInviteSent', { targetName: targetPlayerName });
+        } else {
+            socket.emit('partyError', { message: `${targetPlayerName} is not online` });
+        }
+        
+        console.log(`📩 [PARTY] ${player.name} invited ${targetPlayerName} to party ${partyId}`);
+    });
+
+    socket.on('acceptPartyInvite', (data) => {
+        const { playerId, partyId, fromPlayerId } = data;
+        const player = players[socket.id];
+        const party = getParty(partyId);
+        
+        if (!player || !party) {
+            socket.emit('partyError', { message: 'Party or player not found' });
+            return;
+        }
+        
+        // Check if player is already in a party
+        if (getPlayerParty(playerId)) {
+            socket.emit('partyError', { message: 'You are already in a party' });
+            return;
+        }
+        
+        const result = addToParty(partyId, playerId, player.name);
+        if (!result.success) {
+            socket.emit('partyError', { message: result.error });
+            return;
+        }
+        
+        // Notify player they joined
+        socket.emit('partyJoined', { party: result.party });
+        
+        // Notify all party members
+        result.party.members.forEach(member => {
+            if (member.id !== playerId) {
+                const memberSocket = Object.values(io.sockets.sockets).find(s => players[s.id]?.id === member.id);
+                if (memberSocket) {
+                    memberSocket.emit('partyMemberJoined', {
+                        playerId: playerId,
+                        playerName: player.name,
+                        party: result.party
+                    });
+                }
+            }
+        });
+        
+        // Notify inviter that invite was accepted
+        const inviterSocket = Object.values(io.sockets.sockets).find(s => players[s.id]?.id === fromPlayerId);
+        if (inviterSocket) {
+            inviterSocket.emit('partyInviteAccepted', {
+                playerId: playerId,
+                playerName: player.name,
+                party: result.party
+            });
+        }
+        
+        console.log(`✅ [PARTY] ${player.name} accepted invite and joined party ${partyId}`);
+    });
+
+    socket.on('declinePartyInvite', (data) => {
+        const { playerId, partyId, fromPlayerId } = data;
+        const player = players[socket.id];
+        
+        if (!player) {
+            socket.emit('partyError', { message: 'Player not found' });
+            return;
+        }
+        
+        // Notify inviter that invite was declined
+        const inviterSocket = Object.values(io.sockets.sockets).find(s => players[s.id]?.id === fromPlayerId);
+        if (inviterSocket) {
+            inviterSocket.emit('partyInviteDeclined', {
+                playerId: playerId,
+                playerName: player.name
+            });
+        }
+        
+        console.log(`❌ [PARTY] ${player.name} declined invite to party ${partyId}`);
+    });
+
+    socket.on('leaveParty', (data) => {
+        const { playerId, partyId } = data;
+        const player = players[socket.id];
+        
+        if (!player) {
+            socket.emit('partyError', { message: 'Player not found' });
+            return;
+        }
+        
+        const result = removeFromParty(partyId, playerId);
+        if (!result) {
+            socket.emit('partyError', { message: 'Not in party or party not found' });
+            return;
+        }
+        
+        // Notify player they left
+        socket.emit('partyLeft', { playerId: playerId });
+        
+        if (result.disbanded) {
+            console.log(`💥 [PARTY] Party ${partyId} disbanded when ${player.name} left`);
+        } else {
+            // Notify remaining party members
+            result.party.members.forEach(member => {
+                const memberSocket = Object.values(io.sockets.sockets).find(s => players[s.id]?.id === member.id);
+                if (memberSocket) {
+                    memberSocket.emit('partyMemberLeft', {
+                        playerId: playerId,
+                        playerName: player.name,
+                        newLeader: result.newLeader?.id,
+                        newLeaderName: result.newLeader?.name,
+                        party: result.party
+                    });
+                }
+            });
+        }
+        
+        console.log(`🚪 [PARTY] ${player.name} left party ${partyId}`);
+    });
+
+    socket.on('kickFromParty', (data) => {
+        const { playerId, partyId, targetPlayerId } = data;
+        const player = players[socket.id];
+        const targetPlayer = Object.values(players).find(p => p.id === targetPlayerId);
+        
+        if (!player || !targetPlayer) {
+            socket.emit('partyError', { message: 'Player not found' });
+            return;
+        }
+        
+        const result = kickFromParty(partyId, playerId, targetPlayerId);
+        if (!result.success) {
+            socket.emit('partyError', { message: result.error });
+            return;
+        }
+        
+        // Notify kicked player
+        const targetSocket = Object.values(io.sockets.sockets).find(s => players[s.id]?.id === targetPlayerId);
+        if (targetSocket) {
+            targetSocket.emit('partyLeft', { 
+                playerId: targetPlayerId,
+                kicked: true,
+                kickedBy: player.name
+            });
+        }
+        
+        if (result.disbanded) {
+            console.log(`💥 [PARTY] Party ${partyId} disbanded when ${targetPlayer.name} was kicked`);
+        } else {
+            // Notify remaining party members
+            result.party.members.forEach(member => {
+                const memberSocket = Object.values(io.sockets.sockets).find(s => players[s.id]?.id === member.id);
+                if (memberSocket) {
+                    memberSocket.emit('partyMemberLeft', {
+                        playerId: targetPlayerId,
+                        playerName: targetPlayer.name,
+                        kicked: true,
+                        kickedBy: player.name,
+                        party: result.party
+                    });
+                }
+            });
+        }
+        
+        console.log(`👢 [PARTY] ${targetPlayer.name} was kicked from party ${partyId} by ${player.name}`);
     });
 });
 
