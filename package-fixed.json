@@ -1,0 +1,16 @@
+{
+  "name": "commy-revamped-mmorpg-fixed",
+  "version": "2.0.0",
+  "description": "Working MMORPG with enemies and multiplayer",
+  "main": "server-fixed.js",
+  "scripts": {
+    "start": "node server-fixed.js",
+    "dev": "node server-fixed.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "socket.io": "^4.7.2"
+  },
+  "author": "Otavi",
+  "license": "MIT"
+}

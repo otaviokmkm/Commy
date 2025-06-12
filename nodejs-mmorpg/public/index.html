@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Commy Revamped MMORPG - Clean Version</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background-color: #1a1a1a;
+            color: white;
+            overflow: hidden;
+        }
+        
+        #gameContainer {
+            display: flex;
+            height: 100vh;
+        }
+        
+        #gameCanvas {
+            background-color: #0a0a0a;
+            border: 2px solid #333;
+        }
+        
+        #sidebar {
+            width: 300px;
+            background-color: #2a2a2a;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        
+        #loginScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        #loginForm {
+            background-color: #333;
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        
+        .input {
+            width: 200px;
+            padding: 10px;
+            margin: 10px;
+            border: none;
+            border-radius: 5px;
+            background-color: #555;
+            color: white;
+        }
+        
+        .button {
+            padding: 10px 20px;
+            margin: 10px;
+            border: none;
+            border-radius: 5px;
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+        }
+        
+        .button:hover {
+            background-color: #0056b3;
+        }
+        
+        #status {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 5px;
+            min-height: 20px;
+        }
+        
+        .status-success { background-color: #28a745; }
+        .status-error { background-color: #dc3545; }
+        .status-info { background-color: #17a2b8; }
+        
+        #stats {
+            background-color: #333;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 5px 0;
+        }
+        
+        #chat {
+            background-color: #333;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            height: 150px;
+            overflow-y: auto;
+        }
+        
+        #chatInput {
+            width: calc(100% - 20px);
+            margin-top: 10px;
+        }
+        
+        .chat-message {
+            margin: 2px 0;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Screen -->
+    <div id="loginScreen">
+        <div id="loginForm">
+            <h2>🏰 Commy Revamped MMORPG</h2>
+            <p>Clean Node.js Version</p>
+            <input type="text" id="playerName" class="input" placeholder="Enter your name" maxlength="20">
+            <br>
+            <button id="joinButton" class="button">Join Game</button>
+            <div id="status"></div>
+        </div>
+    </div>
+    
+    <!-- Game Container -->
+    <div id="gameContainer" style="display: none;">
+        <!-- Game Canvas -->
+        <canvas id="gameCanvas"></canvas>
+        
+        <!-- Sidebar -->
+        <div id="sidebar">
+            <div id="playerInfo">
+                <h3>Player Info</h3>
+                <div id="stats">
+                    <div class="stat-row">
+                        <span>Name:</span>
+                        <span id="playerNameDisplay">-</span>
+                    </div>
+                    <div class="stat-row">
+                        <span>Position:</span>
+                        <span id="playerPosition">-</span>
+                    </div>
+                    <div class="stat-row">
+                        <span>HP:</span>
+                        <span id="playerHP">-</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="gameStats">
+                <h3>Game Stats</h3>
+                <div id="stats">
+                    <div class="stat-row">
+                        <span>Players Online:</span>
+                        <span id="playersOnline">0</span>
+                    </div>
+                    <div class="stat-row">
+                        <span>Enemies Alive:</span>
+                        <span id="enemiesAlive">0</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div>
+                <h3>Chat</h3>
+                <div id="chat"></div>
+                <input type="text" id="chatInput" class="input" placeholder="Type message..." maxlength="100">
+            </div>
+            
+            <div style="margin-top: 20px;">
+                <h3>Controls</h3>
+                <div style="font-size: 12px; color: #ccc;">
+                    <div>WASD / Arrow Keys: Move</div>
+                    <div>Click Enemy: Attack</div>
+                    <div>Enter: Send Chat</div>
+                </div>
+            </div>
+            
+            <button id="disconnectButton" class="button" style="margin-top: 20px; background-color: #dc3545;">Disconnect</button>
+        </div>
+    </div>
+
+    <!-- Socket.IO -->
+    <script src="/socket.io/socket.io.js"></script>
+    
+    <!-- Game Client -->
+    <script>
+        // Game state
+        let socket = null;
+        let player = null;
+        let players = new Map();
+        let enemies = new Map();
+        let mapTiles = [];
+        let canvas = null;
+        let ctx = null;
+        let camera = { x: 0, y: 0 };
+        
+        const TILE_SIZE = 20;
+        const WORLD_SIZE = 200;
+        
+        // UI Elements
+        const loginScreen = document.getElementById('loginScreen');
+        const gameContainer = document.getElementById('gameContainer');
+        const joinButton = document.getElementById('joinButton');
+        const playerNameInput = document.getElementById('playerName');
+        const statusDiv = document.getElementById('status');
+        const disconnectButton = document.getElementById('disconnectButton');
+        const chatDiv = document.getElementById('chat');
+        const chatInput = document.getElementById('chatInput');
+        
+        // Status display
+        function showStatus(message, type = 'info') {
+            statusDiv.textContent = message;
+            statusDiv.className = `status-${type}`;
+            console.log(`${type.toUpperCase()}: ${message}`);
+        }
+        
+        // Update UI
+        function updateUI() {
+            if (!player) return;
+            
+            document.getElementById('playerNameDisplay').textContent = player.name;
+            document.getElementById('playerPosition').textContent = `(${player.x}, ${player.y})`;
+            document.getElementById('playerHP').textContent = `${player.hp}/${player.maxHp}`;
+            document.getElementById('playersOnline').textContent = players.size;
+            document.getElementById('enemiesAlive').textContent = enemies.size;
+        }
+        
+        // Add chat message
+        function addChatMessage(playerName, message) {
+            const chatMessage = document.createElement('div');
+            chatMessage.className = 'chat-message';
+            chatMessage.textContent = `${playerName}: ${message}`;
+            chatDiv.appendChild(chatMessage);
+            chatDiv.scrollTop = chatDiv.scrollHeight;
+        }
+        
+        // Initialize canvas
+        function initializeCanvas() {
+            canvas = document.getElementById('gameCanvas');
+            ctx = canvas.getContext('2d');
+            resizeCanvas();
+            
+            // Start render loop
+            gameLoop();
+        }
+        
+        // Resize canvas
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            canvas.width = container.clientWidth - 300; // Subtract sidebar width
+            canvas.height = container.clientHeight;
+        }
+        
+        // Game loop
+        function gameLoop() {
+            render();
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // Render game
+        function render() {
+            if (!ctx || !player) return;
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Update camera
+            const centerX = Math.floor(canvas.width / TILE_SIZE / 2);
+            const centerY = Math.floor(canvas.height / TILE_SIZE / 2);
+            camera.x = Math.max(0, Math.min(player.x - centerX, WORLD_SIZE - Math.floor(canvas.width / TILE_SIZE)));
+            camera.y = Math.max(0, Math.min(player.y - centerY, WORLD_SIZE - Math.floor(canvas.height / TILE_SIZE)));
+            
+            // Render map
+            renderMap();
+            
+            // Render entities
+            renderPlayers();
+            renderEnemies();
+        }
+        
+        // Render map
+        function renderMap() {
+            const startX = camera.x;
+            const endX = Math.min(WORLD_SIZE, camera.x + Math.floor(canvas.width / TILE_SIZE) + 1);
+            const startY = camera.y;
+            const endY = Math.min(WORLD_SIZE, camera.y + Math.floor(canvas.height / TILE_SIZE) + 1);
+            
+            for (let y = startY; y < endY; y++) {
+                for (let x = startX; x < endX; x++) {
+                    if (!mapTiles[y] || !mapTiles[y][x] === undefined) continue;
+                    
+                    const tileType = mapTiles[y][x];
+                    const screenX = (x - camera.x) * TILE_SIZE;
+                    const screenY = (y - camera.y) * TILE_SIZE;
+                    
+                    // Tile colors
+                    switch (tileType) {
+                        case 0: ctx.fillStyle = '#2d5016'; break; // grass
+                        case 1: ctx.fillStyle = '#4a4a4a'; break; // rock
+                        case 2: ctx.fillStyle = '#1a3d0f'; break; // tree
+                        default: ctx.fillStyle = '#2d5016'; break;
+                    }
+                    
+                    ctx.fillRect(screenX, screenY, TILE_SIZE, TILE_SIZE);
+                }
+            }
+        }
+        
+        // Render players
+        function renderPlayers() {
+            // Render other players
+            players.forEach(p => {
+                if (p.id === player.id) return; // Skip self
+                
+                const screenX = (p.x - camera.x) * TILE_SIZE;
+                const screenY = (p.y - camera.y) * TILE_SIZE;
+                
+                if (screenX >= -TILE_SIZE && screenX < canvas.width && 
+                    screenY >= -TILE_SIZE && screenY < canvas.height) {
+                    
+                    ctx.fillStyle = '#4299e1';
+                    ctx.fillRect(screenX + 2, screenY + 2, TILE_SIZE - 4, TILE_SIZE - 4);
+                    
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = '10px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(p.name, screenX + TILE_SIZE/2, screenY - 2);
+                }
+            });
+            
+            // Render local player
+            const screenX = (player.x - camera.x) * TILE_SIZE;
+            const screenY = (player.y - camera.y) * TILE_SIZE;
+            
+            ctx.fillStyle = '#00bfff';
+            ctx.fillRect(screenX + 2, screenY + 2, TILE_SIZE - 4, TILE_SIZE - 4);
+            
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '10px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(player.name, screenX + TILE_SIZE/2, screenY - 2);
+        }
+        
+        // Render enemies
+        function renderEnemies() {
+            enemies.forEach(enemy => {
+                if (!enemy.isAlive) return;
+                
+                const screenX = (enemy.x - camera.x) * TILE_SIZE;
+                const screenY = (enemy.y - camera.y) * TILE_SIZE;
+                
+                if (screenX >= -TILE_SIZE && screenX < canvas.width && 
+                    screenY >= -TILE_SIZE && screenY < canvas.height) {
+                    
+                    ctx.fillStyle = '#e53e3e';
+                    ctx.fillRect(screenX + 2, screenY + 2, TILE_SIZE - 4, TILE_SIZE - 4);
+                    
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = '8px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(enemy.name, screenX + TILE_SIZE/2, screenY - 2);
+                    
+                    // Health bar
+                    const healthPercent = enemy.hp / enemy.maxHp;
+                    ctx.fillStyle = '#ff0000';
+                    ctx.fillRect(screenX, screenY + TILE_SIZE - 2, TILE_SIZE, 2);
+                    ctx.fillStyle = '#00ff00';
+                    ctx.fillRect(screenX, screenY + TILE_SIZE - 2, TILE_SIZE * healthPercent, 2);
+                }
+            });
+        }
+        
+        // Handle movement
+        function handleKeyPress(e) {
+            if (!player) return;
+            
+            let deltaX = 0, deltaY = 0;
+            
+            switch (e.key.toLowerCase()) {
+                case 'w':
+                case 'arrowup':
+                    deltaY = -1;
+                    break;
+                case 's':
+                case 'arrowdown':
+                    deltaY = 1;
+                    break;
+                case 'a':
+                case 'arrowleft':
+                    deltaX = -1;
+                    break;
+                case 'd':
+                case 'arrowright':
+                    deltaX = 1;
+                    break;
+                default:
+                    return;
+            }
+            
+            e.preventDefault();
+              const newX = player.x + deltaX;
+            const newY = player.y + deltaY;
+            
+            if (newX >= 0 && newX < WORLD_SIZE && newY >= 0 && newY < WORLD_SIZE) {
+                // Update local position immediately for smooth movement
+                player.x = newX;
+                player.y = newY;
+                
+                // Send to server
+                socket.emit('playerMove', { x: newX, y: newY, mapId: 'open_world' });
+            }
+        }
+        
+        // Handle canvas click
+        function handleCanvasClick(e) {
+            if (!player) return;
+            
+            const rect = canvas.getBoundingClientRect();
+            const clickX = Math.floor((e.clientX - rect.left) / TILE_SIZE) + camera.x;
+            const clickY = Math.floor((e.clientY - rect.top) / TILE_SIZE) + camera.y;
+            
+            // Check for enemy at clicked position
+            enemies.forEach(enemy => {
+                if (enemy.isAlive && enemy.x === clickX && enemy.y === clickY) {
+                    socket.emit('attackEnemy', { enemyId: enemy.id });
+                }
+            });
+        }
+          // Setup socket events
+        function setupSocket() {
+            socket = io();
+            
+            // Handle different server responses
+            socket.on('gameState', (data) => {
+                player = data.player;
+                
+                // Load players
+                players.clear();
+                if (data.players) {
+                    data.players.forEach(p => players.set(p.id, p));
+                }
+                
+                // Load enemies
+                enemies.clear();
+                if (data.enemies) {
+                    data.enemies.forEach(e => enemies.set(e.id, e));
+                }
+                
+                // Load map
+                if (data.mapData && data.mapData.tiles) {
+                    mapTiles = data.mapData.tiles;
+                }
+                
+                console.log(`🎮 Game state loaded: ${players.size} players, ${enemies.size} enemies`);
+                updateUI();
+            });
+            
+            // Handle map data from your existing server
+            socket.on('mapData', (data) => {
+                console.log('📡 Received mapData:', data);
+                if (data.data && data.data.mapLayoutData) {
+                    mapTiles = data.data.mapLayoutData;
+                    console.log(`🗺️ Map loaded: ${mapTiles.length}x${mapTiles[0]?.length || 0}`);
+                }
+            });
+            
+            // Handle enemies from your existing server
+            socket.on('mapEnemies', (data) => {
+                console.log('👹 Received mapEnemies:', data);
+                if (data.enemies) {
+                    enemies.clear();
+                    data.enemies.forEach(enemy => {
+                        // Convert server enemy format to client format
+                        enemies.set(enemy.id, {
+                            id: enemy.id,
+                            name: enemy.name,
+                            x: enemy.overworldX,
+                            y: enemy.overworldY,
+                            hp: enemy.hp,
+                            maxHp: enemy.maxHp,
+                            isAlive: enemy.isAliveOverworld
+                        });
+                    });
+                    console.log(`👹 Enemies loaded: ${enemies.size}`);
+                    updateUI();
+                }
+            });
+            
+            // Handle enemy updates
+            socket.on('enemyUpdate', (data) => {
+                console.log('🔄 Received enemyUpdate:', data);
+                if (data.enemies) {
+                    data.enemies.forEach(enemy => {
+                        const existingEnemy = enemies.get(enemy.id);
+                        if (existingEnemy) {
+                            existingEnemy.x = enemy.overworldX;
+                            existingEnemy.y = enemy.overworldY;
+                            existingEnemy.hp = enemy.hp;
+                            existingEnemy.isAlive = enemy.isAliveOverworld;
+                        } else {
+                            enemies.set(enemy.id, {
+                                id: enemy.id,
+                                name: enemy.name,
+                                x: enemy.overworldX,
+                                y: enemy.overworldY,
+                                hp: enemy.hp,
+                                maxHp: enemy.maxHp,
+                                isAlive: enemy.isAliveOverworld
+                            });
+                        }
+                    });
+                    updateUI();
+                }
+            });
+            
+            socket.on('playerJoined', (data) => {
+                players.set(data.id, data);
+                addChatMessage('System', `${data.name} joined the game`);
+                updateUI();
+            });
+            
+            socket.on('playerLeft', (data) => {
+                const leftPlayer = players.get(data.id);
+                if (leftPlayer) {
+                    addChatMessage('System', `${leftPlayer.name} left the game`);
+                    players.delete(data.id);
+                }
+                updateUI();
+            });
+            
+            socket.on('playerMoved', (data) => {
+                const p = players.get(data.id);
+                if (p) {
+                    p.x = data.x;
+                    p.y = data.y;
+                }
+            });
+            
+            socket.on('enemyMoved', (data) => {
+                const enemy = enemies.get(data.enemyId);
+                if (enemy) {
+                    enemy.x = data.x;
+                    enemy.y = data.y;
+                }
+            });
+            
+            socket.on('enemyUpdate', (data) => {
+                const enemy = enemies.get(data.enemyId);
+                if (enemy) {
+                    enemy.hp = data.hp;
+                    enemy.isAlive = data.isAlive;
+                }
+                updateUI();
+            });
+            
+            socket.on('enemyDied', (data) => {
+                const enemy = enemies.get(data.enemyId);
+                if (enemy) {
+                    enemy.isAlive = false;
+                }
+                updateUI();
+            });
+            
+            socket.on('chatMessage', (data) => {
+                addChatMessage(data.playerName, data.message);
+            });
+            
+            socket.on('moveRejected', (data) => {
+                console.warn('Move rejected:', data.reason);
+            });
+            
+            socket.on('attackSuccess', (data) => {
+                addChatMessage('Combat', `Hit enemy for ${data.damage} damage!`);
+            });
+            
+            socket.on('enemyDefeated', (data) => {
+                addChatMessage('Combat', `Enemy defeated! +${data.xp} XP`);
+            });
+            
+            socket.on('enemyCollision', (data) => {
+                const enemy = enemies.get(data.enemyId);
+                if (enemy) {
+                    addChatMessage('Combat', `You bumped into ${enemy.name}!`);
+                }
+            });
+        }
+        
+        // Join game
+        joinButton.addEventListener('click', () => {
+            const playerName = playerNameInput.value.trim();
+            
+            if (!playerName) {
+                showStatus('Please enter a player name', 'error');
+                return;
+            }
+            
+            showStatus('Connecting...', 'info');
+            joinButton.disabled = true;
+            
+            setupSocket();
+              socket.on('connect', () => {
+                showStatus('Connected! Joining game...', 'info');
+                
+                // Send join request compatible with your existing server
+                socket.emit('playerJoin', { 
+                    playerId: playerName + '_' + Date.now(),
+                    username: playerName,
+                    position: { x: 100, y: 100 },
+                    mapId: 'open_world'
+                });
+                
+                // Also emit joinMap to trigger map data loading
+                socket.emit('joinMap', {
+                    mapId: 'open_world',
+                    playerId: playerName + '_' + Date.now(),
+                    x: 100,
+                    y: 100,
+                    name: playerName
+                });
+                
+                // Initialize player object for rendering
+                player = {
+                    id: playerName + '_' + Date.now(),
+                    name: playerName,
+                    x: 100,
+                    y: 100,
+                    hp: 100,
+                    maxHp: 100
+                };
+                
+                // Switch to game view
+                loginScreen.style.display = 'none';
+                gameContainer.style.display = 'flex';
+                
+                initializeCanvas();
+                  setTimeout(() => {
+                    showStatus('Welcome to the game!', 'success');
+                    resizeCanvas();
+                    updateUI();
+                    
+                    // Debug: Request enemy data after a short delay
+                    setTimeout(() => {
+                        console.log('🔍 Requesting enemy data...');
+                        socket.emit('joinMap', {
+                            mapId: 'open_world',
+                            playerId: player.id,
+                            x: player.x,
+                            y: player.y,
+                            name: player.name
+                        });
+                    }, 2000);
+                }, 100);
+            });
+            
+            socket.on('connect_error', () => {
+                showStatus('Connection failed', 'error');
+                joinButton.disabled = false;
+            });
+        });
+        
+        // Disconnect
+        disconnectButton.addEventListener('click', () => {
+            if (socket) {
+                socket.disconnect();
+            }
+            
+            gameContainer.style.display = 'none';
+            loginScreen.style.display = 'flex';
+            joinButton.disabled = false;
+            player = null;
+            
+            showStatus('Disconnected', 'info');
+        });
+        
+        // Chat input
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                const message = chatInput.value.trim();
+                if (message && socket) {
+                    socket.emit('chatMessage', { message });
+                    chatInput.value = '';
+                }
+            }
+        });
+        
+        // Player name input
+        playerNameInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                joinButton.click();
+            }
+        });
+        
+        // Event listeners
+        document.addEventListener('keydown', handleKeyPress);
+        window.addEventListener('resize', resizeCanvas);
+        
+        // Canvas click event (set up after canvas is created)
+        setTimeout(() => {
+            const canvas = document.getElementById('gameCanvas');
+            if (canvas) {
+                canvas.addEventListener('click', handleCanvasClick);
+            }
+        }, 1000);
+        
+        console.log('🚀 Clean MMORPG Client Ready!');
+        console.log('💡 This version has working enemies, multiplayer, and chat!');
+    </script>
+</body>
+</html>

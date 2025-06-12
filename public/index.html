@@ -1,0 +1,1634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Commy Revamped MMORPG - WORKING VERSION</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background-color: #1a1a1a;
+            color: white;
+            overflow: hidden;
+        }
+        
+        #gameContainer {
+            display: flex;
+            height: 100vh;
+        }
+        
+        #gameCanvas {
+            background-color: #0a0a0a;
+            border: 2px solid #333;
+        }
+        
+        #sidebar {
+            width: 300px;
+            background-color: #2a2a2a;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        
+        #loginScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        #loginForm {
+            background-color: #333;
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        
+        .input {
+            width: 200px;
+            padding: 10px;
+            margin: 10px;
+            border: none;
+            border-radius: 5px;
+            background-color: #555;
+            color: white;
+        }
+        
+        .button {
+            padding: 10px 20px;
+            margin: 10px;
+            border: none;
+            border-radius: 5px;
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+        }
+        
+        .button:hover {
+            background-color: #0056b3;
+        }
+        
+        #status {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 5px;
+            min-height: 20px;
+        }
+        
+        .status-success { background-color: #28a745; }
+        .status-error { background-color: #dc3545; }
+        .status-info { background-color: #17a2b8; }
+        
+        #stats {
+            background-color: #333;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 5px 0;
+        }
+        
+        #chat {
+            background-color: #333;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            height: 150px;
+            overflow-y: auto;
+        }
+        
+        #chatInput {
+            width: calc(100% - 20px);
+            margin-top: 10px;
+        }
+        
+        .chat-message {
+            margin: 2px 0;
+            font-size: 12px;
+        }
+        
+        /* Combat UI Styles */
+        #combatScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.95);
+            display: none;
+            z-index: 2000;
+        }
+        
+        #combatContainer {
+            display: flex;
+            height: 100vh;
+            color: white;
+        }
+        
+        #combatGrid {
+            background-color: #1a1a1a;
+            border: 2px solid #444;
+            margin: 20px;
+        }
+        
+        #combatSidebar {
+            width: 350px;
+            background-color: #2a2a2a;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        
+        .grid-tile {
+            border: 1px solid #333;
+            display: inline-block;
+            position: relative;
+            cursor: pointer;
+        }
+        
+        .grid-tile.normal { background-color: #2d5016; }
+        .grid-tile.obstacle { background-color: #4a4a4a; }
+        .grid-tile.rough { background-color: #5d4037; }
+        .grid-tile.possible-move { background-color: #1976d2; opacity: 0.7; }
+        .grid-tile.selected { border: 2px solid #ffeb3b; }
+        
+        .combat-unit {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: calc(100% - 4px);
+            height: calc(100% - 4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: bold;
+            color: white;
+            text-shadow: 1px 1px 1px black;
+        }
+        
+        .combat-unit.player { background-color: #2196f3; }
+        .combat-unit.enemy { background-color: #f44336; }
+        .combat-unit.current-turn { box-shadow: 0 0 10px #ffeb3b; }
+        
+        .combat-info {
+            background-color: #333;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+        
+        .turn-info {
+            background-color: #1976d2;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        .unit-stats {
+            background-color: #333;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+        
+        .stats-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 3px 0;
+        }
+        
+        .health-bar, .mp-bar, .ap-bar {
+            width: 100%;
+            height: 8px;
+            background-color: #555;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 2px 0;
+        }
+        
+        .health-fill { background-color: #4caf50; }
+        .mp-fill { background-color: #2196f3; }
+        .ap-fill { background-color: #ff9800; }
+        
+        .combat-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .combat-button {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 5px;
+            background-color: #1976d2;
+            color: white;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        
+        .combat-button:hover { background-color: #1565c0; }
+        .combat-button:disabled { 
+            background-color: #555; 
+            cursor: not-allowed; 
+        }
+        
+        .combat-button.danger { background-color: #f44336; }
+        .combat-button.danger:hover { background-color: #d32f2f; }
+        
+        .combat-log {
+            background-color: #333;
+            padding: 10px;
+            border-radius: 5px;
+            height: 150px;
+            overflow-y: auto;
+            font-size: 12px;
+        }
+          .phase-indicator {
+            background-color: #ff9800;
+            padding: 5px 10px;
+            border-radius: 3px;
+            font-size: 12px;
+            display: inline-block;
+            margin: 5px 0;
+        }
+
+        /* Spell Bar Styles */        .spell-bar {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            /* display: none; /* Hidden by default */ */
+            gap: 10px;
+            background-color: rgba(42, 42, 42, 0.95);
+            padding: 15px;
+            border-radius: 10px;
+            border: 2px solid #555;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            display: none; /* Keep hidden by default, controlled by JS active class */
+        }
+        
+        .spell-bar.active {
+            display: flex !important; /* Ensure it shows when active */
+        }
+
+        .spell-slot {
+            position: relative;
+            width: 60px;
+            height: 60px;
+            background-color: #333;
+            border: 2px solid #555;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .spell-slot:hover {
+            background-color: #444;
+            border-color: #777;
+            transform: scale(1.1);
+        }
+
+        .spell-slot.available {
+            border-color: #4caf50;
+            box-shadow: 0 0 10px rgba(76, 175, 80, 0.3);
+        }
+
+        .spell-slot.on-cooldown {
+            border-color: #f44336;
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .spell-slot.not-enough-mana {
+            border-color: #ff9800;
+            opacity: 0.7;
+        }
+
+        .spell-icon {
+            font-size: 24px;
+            margin-bottom: 2px;
+        }
+
+        .spell-name {
+            font-size: 9px;
+            color: #ccc;
+            text-align: center;
+            line-height: 1;
+        }
+
+        .spell-key {
+            position: absolute;
+            top: 2px;
+            right: 4px;
+            font-size: 8px;
+            color: #aaa;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 1px 3px;
+            border-radius: 2px;
+        }
+
+        .spell-mana {
+            position: absolute;
+            bottom: 2px;
+            left: 4px;
+            font-size: 8px;
+            color: #2196f3;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 1px 3px;
+            border-radius: 2px;
+        }
+
+        .spell-cooldown {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(244, 67, 54, 0.8);
+            border-radius: 6px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 14px;
+        }        .spell-slot.selected {
+            border-color: #ffeb3b;
+            box-shadow: 0 0 15px rgba(255, 235, 59, 0.8);
+            background-color: #555;
+        }
+
+        .spell-cooldown.active {
+            display: flex;
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Screen -->
+    <div id="loginScreen">        <div id="loginForm">
+            <h2>🏰 Commy Revamped MMORPG</h2>
+            <p>✅ WORKING VERSION with Spell Combat!</p>
+            <input type="text" id="playerName" class="input" placeholder="Enter your name" maxlength="20">
+            <br>
+            <select id="playerClass" class="input" style="width: 220px;">
+                <option value="mage">🔥 Mage - Magical damage and healing</option>
+                <option value="ranger">🏹 Ranger - Ranged attacks and mobility</option>
+            </select>
+            <br>
+            <button id="joinButton" class="button">Join Game</button>
+            <div id="status"></div>
+        </div>
+    </div>
+    
+    <!-- Game Container -->
+    <div id="gameContainer" style="display: none;">
+        <!-- Game Canvas -->
+        <canvas id="gameCanvas"></canvas>
+        
+        <!-- Sidebar -->
+        <div id="sidebar">
+            <div id="playerInfo">
+                <h3>Player Info</h3>
+                <div id="stats">
+                    <div class="stat-row">
+                        <span>Name:</span>
+                        <span id="playerNameDisplay">-</span>
+                    </div>
+                    <div class="stat-row">
+                        <span>Position:</span>
+                        <span id="playerPosition">-</span>
+                    </div>
+                    <div class="stat-row">
+                        <span>HP:</span>
+                        <span id="playerHP">-</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="gameStats">
+                <h3>Game Stats</h3>
+                <div id="stats">
+                    <div class="stat-row">
+                        <span>Players Online:</span>
+                        <span id="playersOnline">0</span>
+                    </div>                    <div class="stat-row">
+                        <span>Enemies Alive:</span>
+                        <span id="enemiesAlive">0</span>
+                    </div>
+                    <div class="stat-row">
+                        <span>Connection:</span>
+                        <span id="connectionStatus">Disconnected</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div>
+                <h3>Chat</h3>
+                <div id="chat"></div>
+                <input type="text" id="chatInput" class="input" placeholder="Type message..." maxlength="100">
+            </div>
+            
+            <div style="margin-top: 20px;">
+                <h3>Controls</h3>
+                <div style="font-size: 12px; color: #ccc;">
+                    <div>WASD / Arrow Keys: Move</div>
+                    <div>Click Enemy: Attack</div>
+                    <div>Enter: Send Chat</div>
+                </div>
+            </div>
+              <button id="disconnectButton" class="button" style="margin-top: 20px; background-color: #dc3545;">Disconnect</button>
+        </div>
+    </div>
+
+    <!-- Tactical Combat Screen -->
+    <div id="combatScreen">
+        <div id="combatContainer">
+            <!-- Combat Grid Area -->
+            <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                <h2 style="color: white; margin-bottom: 20px;">⚔️ Tactical Combat</h2>
+                <canvas id="combatGrid" width="450" height="450"></canvas>
+            </div>
+            
+            <!-- Combat Sidebar -->
+            <div id="combatSidebar">
+                <div class="turn-info" id="turnInfo">
+                    <div id="currentTurnDisplay">Player's Turn</div>
+                    <div class="phase-indicator" id="phaseIndicator">Movement Phase</div>
+                </div>
+                
+                <div class="combat-info">
+                    <h3>Current Unit</h3>
+                    <div id="currentUnitStats" class="unit-stats">
+                        <div class="stats-row">
+                            <span>Name:</span>
+                            <span id="unitName">-</span>
+                        </div>
+                        <div class="stats-row">
+                            <span>HP:</span>
+                            <span id="unitHP">-/-</span>
+                        </div>
+                        <div class="health-bar">
+                            <div class="health-fill" id="unitHealthFill" style="width: 100%;"></div>
+                        </div>
+                        <div class="stats-row">
+                            <span>Move Points:</span>
+                            <span id="unitMP">-/-</span>
+                        </div>
+                        <div class="mp-bar">
+                            <div class="mp-fill" id="unitMPFill" style="width: 100%;"></div>
+                        </div>
+                        <div class="stats-row">
+                            <span>Action Points:</span>
+                            <span id="unitAP">-/-</span>
+                        </div>
+                        <div class="ap-bar">
+                            <div class="ap-fill" id="unitAPFill" style="width: 100%;"></div>
+                        </div>
+                    </div>
+                </div>
+                  <div class="combat-actions">
+                    <button class="combat-button" id="endTurnBtn">End Turn</button>
+                    <button class="combat-button" id="attackBtn">Attack</button>
+                    <!-- <button class="combat-button" id="defendBtn">Defend</button> -->
+                    <button class="combat-button" id="waitBtn">Wait</button>
+                    <button class="combat-button danger" id="fleeCombatBtn">Flee Combat</button>
+                </div>
+                
+                <div class="combat-info">
+                    <h3>Combat Log</h3>
+                    <div class="combat-log" id="combatLogDisplay"></div>
+                </div>
+            </div>
+        </div>
+    </div>    <!-- Spell Shortcuts Bar -->
+    <div id="spellBar" class="spell-bar" style="display: none;">
+        <div class="spell-slot" data-spell="1" data-key="1">
+            <div class="spell-icon">🔥</div>
+            <div class="spell-name">Fireball</div>
+            <div class="spell-key">1</div>
+            <div class="spell-cooldown"></div>
+            <div class="spell-mana">25</div>
+        </div>
+        <div class="spell-slot" data-spell="2" data-key="2">
+            <div class="spell-icon">💚</div>
+            <div class="spell-name">Heal</div>
+            <div class="spell-key">2</div>
+            <div class="spell-cooldown"></div>
+            <div class="spell-mana">20</div>
+        </div>
+        <div class="spell-slot" data-spell="3" data-key="3">
+            <div class="spell-icon">⚡</div>
+            <div class="spell-name">Lightning</div>
+            <div class="spell-key">3</div>
+            <div class="spell-cooldown"></div>
+            <div class="spell-mana">30</div>
+        </div>
+        <div class="spell-slot" data-spell="4" data-key="4">
+            <div class="spell-icon">🌀</div>
+            <div class="spell-name">Teleport</div>
+            <div class="spell-key">4</div>
+            <div class="spell-cooldown"></div>
+            <div class="spell-mana">40</div>
+        </div>
+        <div class="spell-slot" data-spell="move" data-key="spacebar">
+            <div class="spell-icon">👣</div>
+            <div class="spell-name">Move</div>
+            <div class="spell-key">Space</div>
+        </div>
+        <div class="spell-slot" data-spell="endturn" data-key="enter">
+            <div class="spell-icon">⏭️</div>
+            <div class="spell-name">End Turn</div>
+            <div class="spell-key">Enter</div>
+        </div>
+    </div>
+
+    <!-- Socket.IO -->
+    <script src="/socket.io/socket.io.js"></script>
+    
+    <!-- Game Client -->
+    <script>
+        // Game state
+        let socket = null;
+        let player = null;
+        let players = new Map();
+        let enemies = new Map();
+        let mapTiles = [];
+        let canvas = null;
+        let ctx = null;
+        let camera = { x: 0, y: 0 };
+        
+        const TILE_SIZE = 20;
+        const WORLD_SIZE = 200;
+        
+        // UI Elements
+        const loginScreen = document.getElementById('loginScreen');
+        const gameContainer = document.getElementById('gameContainer');
+        const joinButton = document.getElementById('joinButton');
+        const playerNameInput = document.getElementById('playerName');
+        const statusDiv = document.getElementById('status');
+        const disconnectButton = document.getElementById('disconnectButton');
+        const chatDiv = document.getElementById('chat');
+        const chatInput = document.getElementById('chatInput');        // Combat state
+        let currentCombat = null;
+        let combatCanvas = null;
+        let combatCtx = null;
+        let selectedTile = null;
+        let selectedSpell = null;
+        let playerClass = 'mage'; // Default class
+        const COMBAT_TILE_SIZE = 50;
+        
+        // Combat UI elements
+        const combatScreen = document.getElementById('combatScreen');
+        const currentTurnDisplay = document.getElementById('currentTurnDisplay');
+        const phaseIndicator = document.getElementById('phaseIndicator');
+        const unitName = document.getElementById('unitName');
+        const unitHP = document.getElementById('unitHP');
+        const unitMP = document.getElementById('unitMP');
+        const unitAP = document.getElementById('unitAP');
+        const unitHealthFill = document.getElementById('unitHealthFill');
+        const unitMPFill = document.getElementById('unitMPFill');
+        const unitAPFill = document.getElementById('unitAPFill');
+        const combatLogDisplay = document.getElementById('combatLogDisplay');
+        
+        // Combat buttons
+        const switchPhaseBtn = document.getElementById('switchPhaseBtn');
+        const endTurnBtn = document.getElementById('endTurnBtn');
+        const attackBtn = document.getElementById('attackBtn');
+        const defendBtn = document.getElementById('defendBtn');
+        const waitBtn = document.getElementById('waitBtn');
+        const fleeCombatBtn = document.getElementById('fleeCombatBtn');
+        
+        // Status display
+        function showStatus(message, type = 'info') {
+            statusDiv.textContent = message;
+            statusDiv.className = `status-${type}`;
+            console.log(`${type.toUpperCase()}: ${message}`);
+        }
+          // Update UI
+        function updateUI() {
+            if (!player) return;
+            
+            document.getElementById('playerNameDisplay').textContent = player.name;
+            document.getElementById('playerPosition').textContent = `(${player.x}, ${player.y})`;
+            document.getElementById('playerHP').textContent = `${player.hp}/${player.maxHp}`;
+            document.getElementById('playersOnline').textContent = players.size;
+            document.getElementById('enemiesAlive').textContent = enemies.size;
+            
+            // Update connection status
+            const statusEl = document.getElementById('connectionStatus');
+            if (socket && socket.connected) {
+                statusEl.textContent = 'Connected';
+                statusEl.style.color = '#28a745';
+            } else {
+                statusEl.textContent = 'Disconnected';
+                statusEl.style.color = '#dc3545';
+            }
+        }
+        
+        // Add chat message
+        function addChatMessage(playerName, message) {
+            const chatMessage = document.createElement('div');
+            chatMessage.className = 'chat-message';
+            chatMessage.textContent = `${playerName}: ${message}`;
+            chatDiv.appendChild(chatMessage);
+            chatDiv.scrollTop = chatDiv.scrollHeight;
+        }
+        
+        // Initialize canvas
+        function initializeCanvas() {
+            canvas = document.getElementById('gameCanvas');
+            ctx = canvas.getContext('2d');
+            resizeCanvas();
+            
+            // Start render loop
+            gameLoop();
+        }
+        
+        // Resize canvas
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            canvas.width = container.clientWidth - 300; // Subtract sidebar width
+            canvas.height = container.clientHeight;
+        }
+        
+        // Game loop
+        function gameLoop() {
+            render();
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // Render game
+        function render() {
+            if (!ctx || !player) return;
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Update camera
+            const centerX = Math.floor(canvas.width / TILE_SIZE / 2);
+            const centerY = Math.floor(canvas.height / TILE_SIZE / 2);
+            camera.x = Math.max(0, Math.min(player.x - centerX, WORLD_SIZE - Math.floor(canvas.width / TILE_SIZE)));
+            camera.y = Math.max(0, Math.min(player.y - centerY, WORLD_SIZE - Math.floor(canvas.height / TILE_SIZE)));
+            
+            // Render map
+            renderMap();
+            
+            // Render entities
+            renderPlayers();
+            renderEnemies();
+        }
+        
+        // Render map
+        function renderMap() {
+            const startX = camera.x;
+            const endX = Math.min(WORLD_SIZE, camera.x + Math.floor(canvas.width / TILE_SIZE) + 1);
+            const startY = camera.y;
+            const endY = Math.min(WORLD_SIZE, camera.y + Math.floor(canvas.height / TILE_SIZE) + 1);
+            
+            // Default grass background
+            ctx.fillStyle = '#2d5016';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Add some simple terrain patterns
+            for (let y = startY; y < endY; y++) {
+                for (let x = startX; x < endX; x++) {
+                    const screenX = (x - camera.x) * TILE_SIZE;
+                    const screenY = (y - camera.y) * TILE_SIZE;
+                    
+                    // Create simple patterns
+                    if ((x + y) % 15 === 0) {
+                        ctx.fillStyle = '#4a4a4a'; // rocks
+                        ctx.fillRect(screenX, screenY, TILE_SIZE, TILE_SIZE);
+                    } else if ((x * y) % 23 === 0) {
+                        ctx.fillStyle = '#1a3d0f'; // trees
+                        ctx.fillRect(screenX, screenY, TILE_SIZE, TILE_SIZE);
+                    }
+                }
+            }
+        }
+        
+        // Render players
+        function renderPlayers() {
+            // Render other players
+            players.forEach(p => {
+                if (p.id === player.id) return; // Skip self
+                
+                const screenX = (p.x - camera.x) * TILE_SIZE;
+                const screenY = (p.y - camera.y) * TILE_SIZE;
+                
+                if (screenX >= -TILE_SIZE && screenX < canvas.width && 
+                    screenY >= -TILE_SIZE && screenY < canvas.height) {
+                    
+                    ctx.fillStyle = '#4299e1';
+                    ctx.fillRect(screenX + 2, screenY + 2, TILE_SIZE - 4, TILE_SIZE - 4);
+                    
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = '10px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(p.name, screenX + TILE_SIZE/2, screenY - 2);
+                }
+            });
+            
+            // Render local player
+            const screenX = (player.x - camera.x) * TILE_SIZE;
+            const screenY = (player.y - camera.y) * TILE_SIZE;
+            
+            ctx.fillStyle = '#00bfff';
+            ctx.fillRect(screenX + 2, screenY + 2, TILE_SIZE - 4, TILE_SIZE - 4);
+            
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '10px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(player.name, screenX + TILE_SIZE/2, screenY - 2);
+        }
+          // Render enemies
+        function renderEnemies() {
+            let renderedCount = 0;
+            
+            enemies.forEach(enemy => {
+                if (!enemy.isAliveOverworld) return;
+                
+                const screenX = (enemy.overworldX - camera.x) * TILE_SIZE;
+                const screenY = (enemy.overworldY - camera.y) * TILE_SIZE;
+                
+                if (screenX >= -TILE_SIZE && screenX < canvas.width && 
+                    screenY >= -TILE_SIZE && screenY < canvas.height) {
+                    
+                    // Render enemy as red square
+                    ctx.fillStyle = '#e53e3e';
+                    ctx.fillRect(screenX + 2, screenY + 2, TILE_SIZE - 4, TILE_SIZE - 4);
+                    
+                    // Render name
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = '8px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(enemy.name, screenX + TILE_SIZE/2, screenY - 2);
+                    
+                    // Health bar
+                    const healthPercent = enemy.hp / enemy.maxHp;
+                    ctx.fillStyle = '#ff0000';
+                    ctx.fillRect(screenX, screenY + TILE_SIZE - 2, TILE_SIZE, 2);
+                    ctx.fillStyle = '#00ff00';
+                    ctx.fillRect(screenX, screenY + TILE_SIZE - 2, TILE_SIZE * healthPercent, 2);
+                    
+                    renderedCount++;
+                }
+            });
+            
+            // Debug info
+            if (renderedCount !== enemies.size) {
+                ctx.fillStyle = '#ffffff';
+                ctx.font = '12px Arial';
+                ctx.textAlign = 'left';
+                ctx.fillText(`Enemies: ${renderedCount}/${enemies.size} visible`, 10, canvas.height - 10);
+            }
+        }
+          // Handle movement and spell casting
+        function handleKeyPress(e) {
+            if (!player) return;
+            
+            // Handle combat spell casting
+            if (currentCombat) {
+                switch (e.key) {
+                    case '1':
+                    case '2':
+                    case '3':
+                    case '4':
+                        handleSpellKeyPress(parseInt(e.key));
+                        e.preventDefault();
+                        return;
+                    case ' ':
+                        selectedSpell = 'move';
+                        addCombatLog('Click a tile to move to it');
+                        e.preventDefault();
+                        return;
+                    case 'Enter':
+                        socket.emit('combatEndTurn');
+                        e.preventDefault();
+                        return;
+                    default:
+                        return;
+                }
+            }
+            
+            // Handle overworld movement
+            let deltaX = 0, deltaY = 0;
+            
+            switch (e.key.toLowerCase()) {
+                case 'w':
+                case 'arrowup':
+                    deltaY = -1;
+                    break;
+                case 's':
+                case 'arrowdown':
+                    deltaY = 1;
+                    break;
+                case 'a':
+                case 'arrowleft':
+                    deltaX = -1;
+                    break;
+                case 'd':
+                case 'arrowright':
+                    deltaX = 1;
+                    break;
+                default:
+                    return;
+            }
+            
+            e.preventDefault();
+            const newX = player.x + deltaX;
+            const newY = player.y + deltaY;
+            
+            if (newX >= 0 && newX < WORLD_SIZE && newY >= 0 && newY < WORLD_SIZE) {
+                // Update local position immediately for smooth movement
+                player.x = newX;
+                player.y = newY;
+                
+                // Send to server
+                socket.emit('playerMove', { x: newX, y: newY, mapId: 'open_world' });
+                updateUI();
+            }
+        }
+
+        function handleSpellKeyPress(spellNumber) {
+            const spellSlot = document.querySelector(`.spell-slot[data-spell="${spellNumber}"]`);
+            if (spellSlot) {
+                spellSlot.click();
+            }
+        }
+        
+        // Handle canvas click
+        function handleCanvasClick(e) {
+            if (!player) return;
+            
+            const rect = canvas.getBoundingClientRect();
+            const clickX = Math.floor((e.clientX - rect.left) / TILE_SIZE) + camera.x;
+            const clickY = Math.floor((e.clientY - rect.top) / TILE_SIZE) + camera.y;
+            
+            console.log(`🖱️ Clicked at (${clickX}, ${clickY})`);
+            
+            // Check for enemy at clicked position
+            enemies.forEach(enemy => {
+                if (enemy.isAliveOverworld && enemy.overworldX === clickX && enemy.overworldY === clickY) {
+                    console.log(`⚔️ Attacking enemy ${enemy.name}`);
+                    socket.emit('attackEnemy', { enemyId: enemy.id });
+                }
+            });
+        }
+          // Setup socket events
+        function setupSocket() {
+            socket = io();
+            
+            // Handle complete game state on join
+            socket.on('gameState', (data) => {
+                console.log('🎮 Received complete game state:', data);
+                
+                player = data.player;
+                
+                // Load all players
+                players.clear();
+                if (data.players) {
+                    data.players.forEach(p => players.set(p.id, p));
+                }
+                
+                // Load all enemies
+                enemies.clear();
+                if (data.enemies) {
+                    data.enemies.forEach(e => enemies.set(e.id, e));
+                }
+                
+                // Load map
+                if (data.mapData && data.mapData.tiles) {
+                    mapTiles = data.mapData.tiles;
+                }
+                
+                console.log(`✅ Game loaded: ${players.size} players, ${enemies.size} enemies`);
+                updateUI();
+            });
+            
+            // Handle player synchronization
+            socket.on('playersSync', (data) => {
+                if (data.players) {
+                    data.players.forEach(p => {
+                        if (p.id !== player?.id) { // Don't sync our own player
+                            players.set(p.id, p);
+                        }
+                    });
+                }
+            });
+            
+            // Handle enemy updates (movement, damage, etc.)
+            socket.on('enemyUpdate', (data) => {
+                if (data.enemies) {
+                    data.enemies.forEach(enemy => {
+                        enemies.set(enemy.id, enemy);
+                    });
+                    updateUI();
+                }
+            });
+              socket.on('playerJoined', (data) => {
+                players.set(data.id, data);
+                addChatMessage('System', `${data.name} joined the game`);
+                console.log(`👤 Player ${data.name} joined`);
+                updateUI();
+            });
+            
+            socket.on('playerLeft', (data) => {
+                const leftPlayer = players.get(data.id);
+                if (leftPlayer) {
+                    addChatMessage('System', `${leftPlayer.name} left the game`);
+                    players.delete(data.id);
+                    console.log(`👋 Player ${leftPlayer.name} left`);
+                }
+                updateUI();
+            });
+            
+            socket.on('playerMoved', (data) => {
+                const p = players.get(data.id);
+                if (p) {
+                    p.x = data.x;
+                    p.y = data.y;
+                    console.log(`🚶 ${data.name} moved to (${data.x}, ${data.y})`);
+                } else if (data.id !== player?.id) {
+                    // New player we haven't seen before
+                    players.set(data.id, {
+                        id: data.id,
+                        name: data.name,
+                        x: data.x,
+                        y: data.y
+                    });
+                }
+            });
+              socket.on('enemyDied', (data) => {
+                const enemy = enemies.get(data.enemyId);
+                if (enemy) {
+                    enemy.isAliveOverworld = false;
+                    console.log(`💀 Enemy ${enemy.name} died`);
+                }
+                updateUI();
+            });
+            
+            socket.on('chatMessage', (data) => {
+                addChatMessage(data.playerName, data.message);
+            });
+            
+            socket.on('attackSuccess', (data) => {
+                addChatMessage('Combat', `Hit enemy for ${data.damage} damage!`);
+            });
+              socket.on('enemyDefeated', (data) => {
+                addChatMessage('Combat', `Enemy defeated! +${data.xp} XP`);
+            });            // Combat event handlers
+            socket.on('combatStart', (data) => {
+                console.log('⚔️ Combat started:', data);
+                currentCombat = data;
+                showCombatScreen();
+            });
+            
+            socket.on('combatUpdate', (data) => {
+                console.log('🔄 Combat updated:', data);
+                currentCombat = data;
+                updateCombatUI();
+                updateSpellBar();
+                renderCombatGrid();
+            });
+
+            socket.on('combatSpellResult', (data) => {
+                if (data.success) {
+                    addCombatLog(data.message);
+                    if (data.effect) {
+                        // TODO: Add visual effects for spells
+                        console.log(`✨ Spell effect: ${data.effect}`);
+                    }
+                } else {
+                    addCombatLog(`Spell failed: ${data.error}`);
+                }
+            });            socket.on('combatActionResult', (data) => {
+                if (data.success) {
+                    addCombatLog(data.message);
+                    
+                    // Handle specific action results
+                    if (data.action === 'wait' && data.manaRestored) {
+                        addCombatLog(`+${data.manaRestored} mana restored`);
+                    }
+                    
+                    // Update combat state if provided
+                    if (data.combatUpdate) {
+                        currentCombat = data.combatUpdate;
+                        updateCombatUI();
+                        updateSpellBar();
+                        renderCombatGrid();
+                    }
+                } else {
+                    addCombatLog(`Action failed: ${data.error}`);
+                }
+            });
+              
+            socket.on('combatEnded', (data) => {
+                console.log('🏁 Combat ended:', data);
+                
+                if (data.result === 'victory') {
+                    addCombatLog('🎉 Victory!');
+                } else {
+                    addCombatLog('💀 Defeat!');
+                }
+                
+                setTimeout(() => {
+                    hideCombatScreen();
+                    addChatMessage('System', data.result === 'victory' ? 'You won the combat!' : 'You won the combat!');
+                }, 3000);
+            });
+            
+            socket.on('characterDeleted', (data) => {
+                console.log('💀 Character deleted:', data);
+                alert(data.message);
+                
+                // Reset to login screen
+                gameContainer.style.display = 'none';
+                combatScreen.style.display = 'none';
+                loginScreen.style.display = 'flex';
+                joinButton.disabled = false;
+                player = null;
+                players.clear();
+                enemies.clear();
+            });
+            
+            socket.on('playerDeleted', (data) => {
+                console.log('💀 Another player was deleted:', data);
+                players.delete(data.playerId);
+                addChatMessage('System', `${data.playerName} was defeated and their character was deleted!`);
+                updateUI();
+            });
+              socket.on('moveRejected', (data) => {
+                if (data.combat) {
+                    console.log('⚔️ Combat triggered:', data.reason);
+                    addChatMessage('System', data.reason);
+                } else {
+                    console.log('❌ Move rejected:', data.reason);
+                }
+            });
+              socket.on('combatFleeResult', (data) => {
+                if (data.success) {
+                    console.log('🏃 Successfully fled from combat');
+                    hideCombatScreen();
+                    addChatMessage('System', 'You fled from combat!');
+                } else {
+                    console.log('❌ Failed to flee:', data.error);
+                    addCombatLog(`Failed to flee: ${data.error}`);
+                }
+            });
+            
+            socket.on('combatEndTurnResult', (data) => {
+                if (data.success) {
+                    if (data.phaseSwitch) {
+                        console.log('🔄 Phase switched automatically');
+                        addCombatLog('Switched to Action Phase');
+                    } else {
+                        console.log('✅ Turn ended successfully');
+                        addCombatLog('Turn ended');
+                    }
+                } else {
+                    console.log('❌ Failed to end turn:', data.error);
+                    addCombatLog(`Failed to end turn: ${data.error}`);
+                }
+            });
+        }
+          // Join game
+        joinButton.addEventListener('click', () => {
+            const playerName = playerNameInput.value.trim();
+            const selectedClass = document.getElementById('playerClass').value;
+            
+            if (!playerName) {
+                showStatus('Please enter a player name', 'error');
+                return;
+            }
+            
+            playerClass = selectedClass; // Store selected class
+            showStatus('Connecting...', 'info');
+            joinButton.disabled = true;
+            
+            setupSocket();
+            
+            socket.on('connect', () => {
+                showStatus('Connected! Joining game...', 'info');
+                
+                // Send join request with class
+                socket.emit('playerJoin', { 
+                    username: playerName,
+                    class: selectedClass,
+                    position: { x: 100, y: 100 },
+                    mapId: 'open_world'
+                });
+                
+                // Also emit joinMap to trigger enemy data
+                socket.emit('joinMap', {
+                    mapId: 'open_world',
+                    name: playerName
+                });
+                
+                // Initialize player object for rendering
+                player = {
+                    id: playerName + '_' + Date.now(),
+                    name: playerName,
+                    class: selectedClass,
+                    x: 100,
+                    y: 100,
+                    hp: 100,
+                    maxHp: 100
+                };
+                
+                // Switch to game view
+                loginScreen.style.display = 'none';
+                gameContainer.style.display = 'flex';
+                
+                initializeCanvas();
+                
+                setTimeout(() => {
+                    showStatus(`Welcome to the game as a ${selectedClass}!`, 'success');
+                    resizeCanvas();
+                    updateUI();
+                }, 100);
+            });
+              socket.on('connect_error', () => {
+                showStatus('Connection failed', 'error');
+                joinButton.disabled = false;
+            });
+            
+            socket.on('disconnect', () => {
+                showStatus('Disconnected from server', 'error');
+                updateUI();
+            });
+            
+            socket.on('reconnect', () => {
+                showStatus('Reconnected to server', 'success');
+                updateUI();
+            });
+        });
+        
+        // Disconnect
+        disconnectButton.addEventListener('click', () => {
+            if (socket) {
+                socket.disconnect();
+            }
+            
+            gameContainer.style.display = 'none';
+            loginScreen.style.display = 'flex';
+            joinButton.disabled = false;
+            player = null;
+            
+            showStatus('Disconnected', 'info');
+        });
+        
+        // Chat input
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                const message = chatInput.value.trim();
+                if (message && socket) {
+                    socket.emit('chatMessage', { message });
+                    chatInput.value = '';
+                }
+            }
+        });
+        
+        // Player name input
+        playerNameInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                joinButton.click();
+            }
+        });
+          // Event listeners
+        document.addEventListener('keydown', handleKeyPress);
+        window.addEventListener('resize', resizeCanvas);        // Combat functions
+        function showCombatScreen() {
+            if (!gameContainer || !combatScreen) {
+                console.error('Missing UI elements for combat screen:', {
+                    gameContainer: !!gameContainer,
+                    combatScreen: !!combatScreen
+                });
+                return;
+            }
+            
+            gameContainer.style.display = 'none';
+            combatScreen.style.display = 'block';
+            
+            combatCanvas = document.getElementById('combatGrid');
+            if (!combatCanvas) {
+                console.error('Combat grid canvas not found');
+                return;
+            }
+            
+            combatCtx = combatCanvas.getContext('2d');            // Show spell bar during combat
+            const spellBar = document.getElementById('spellBar');
+            if (spellBar) {
+                console.log('🔧 Showing spell bar during combat');
+                spellBar.style.display = 'flex';
+                spellBar.classList.add('active');
+                setupSpellBar();
+            } else {
+                console.error('❌ Spell bar element not found');
+            }
+            
+            // Set up combat event listeners
+            combatCanvas.addEventListener('click', handleCombatGridClick);            // Set up combat button listeners
+            if (switchPhaseBtn) switchPhaseBtn.style.display = 'none'; // Hide phase switch button
+            if (endTurnBtn) endTurnBtn.addEventListener('click', () => socket.emit('combatEndTurn'));
+            if (attackBtn) attackBtn.addEventListener('click', () => handleCombatAttack());
+            // if (defendBtn) defendBtn.addEventListener('click', () => socket.emit('combatAction', { type: 'defend', cost: 1 }));
+            if (waitBtn) waitBtn.addEventListener('click', () => socket.emit('combatAction', { type: 'wait', cost: 1 }));
+            if (fleeCombatBtn) fleeCombatBtn.addEventListener('click', () => handleFleeCombat());
+            
+            updateCombatUI();
+            renderCombatGrid();
+        }        function setupSpellBar() {
+            console.log('🔧 Setting up spell bar...');
+            const spellSlots = document.querySelectorAll('.spell-slot');
+            console.log(`🔧 Found ${spellSlots.length} spell slots`);
+            
+            spellSlots.forEach(slot => {
+                slot.addEventListener('click', handleSpellSlotClick);
+                slot.addEventListener('mouseenter', showSpellTooltip);
+                slot.addEventListener('mouseleave', hideSpellTooltip);
+            });
+
+            // Update spell bar based on player class
+            updateSpellBar();
+        }        function updateSpellBar() {
+            console.log('🔧 Updating spell bar...');
+            if (!currentCombat) {
+                console.log('❌ No current combat, skipping spell bar update');
+                return;
+            }
+
+            const playerUnit = currentCombat.participants.find(p => p.originalId === player?.id);
+            if (!playerUnit) {
+                console.log('❌ Player unit not found in combat');
+                return;
+            }
+            
+            console.log(`🔧 Player unit found: ${playerUnit.name}, class: ${playerUnit.class}`);
+
+            const spellSlots = document.querySelectorAll('.spell-slot');
+            
+            spellSlots.forEach((slot, index) => {
+                const spellData = slot.dataset.spell;
+                
+                if (spellData === 'move' || spellData === 'endturn') {
+                    // Movement and end turn are always available
+                    slot.classList.remove('on-cooldown', 'not-enough-mana');
+                    slot.classList.add('available');
+                    return;
+                }
+
+                const spell = playerUnit.spells ? playerUnit.spells[parseInt(spellData) - 1] : null;
+                if (!spell) {
+                    slot.style.display = 'none';
+                    return;
+                }
+
+                // Update spell slot with current spell data
+                const icon = slot.querySelector('.spell-icon');
+                const name = slot.querySelector('.spell-name');
+                const mana = slot.querySelector('.spell-mana');
+                const cooldownDiv = slot.querySelector('.spell-cooldown');
+
+                if (icon) icon.textContent = spell.icon;
+                if (name) name.textContent = spell.name;
+                if (mana) mana.textContent = spell.manaCost;
+
+                // Check availability
+                const isOnCooldown = playerUnit.spellCooldowns && playerUnit.spellCooldowns[spell.id] > 0;
+                const hasEnoughMana = playerUnit.mana >= spell.manaCost;
+
+                slot.classList.remove('available', 'on-cooldown', 'not-enough-mana');
+
+                if (isOnCooldown) {
+                    slot.classList.add('on-cooldown');
+                    if (cooldownDiv) {
+                        cooldownDiv.textContent = playerUnit.spellCooldowns[spell.id];
+                        cooldownDiv.classList.add('active');
+                    }
+                } else if (!hasEnoughMana) {
+                    slot.classList.add('not-enough-mana');
+                    if (cooldownDiv) cooldownDiv.classList.remove('active');
+                } else {
+                    slot.classList.add('available');
+                    if (cooldownDiv) cooldownDiv.classList.remove('active');
+                }
+            });
+        }
+
+        function handleSpellSlotClick(e) {
+            const slot = e.currentTarget;
+            const spellData = slot.dataset.spell;
+
+            if (slot.classList.contains('on-cooldown') || slot.classList.contains('not-enough-mana')) {
+                addCombatLog('Spell not available!');
+                return;
+            }
+
+            if (spellData === 'move') {
+                selectedSpell = 'move';
+                addCombatLog('Click a tile to move to it');
+            } else if (spellData === 'endturn') {
+                socket.emit('combatEndTurn');
+            } else {
+                const spellIndex = parseInt(spellData) - 1;
+                const playerUnit = currentCombat?.participants.find(p => p.originalId === player?.id);
+                
+                if (playerUnit && playerUnit.spells && playerUnit.spells[spellIndex]) {
+                    selectedSpell = playerUnit.spells[spellIndex];
+                    addCombatLog(`Selected ${selectedSpell.name}. Click a tile to cast it.`);
+                }
+            }
+
+            // Update visual selection
+            document.querySelectorAll('.spell-slot').forEach(s => s.classList.remove('selected'));
+            slot.classList.add('selected');
+        }
+
+        function showSpellTooltip(e) {
+            // TODO: Implement tooltip showing spell details
+        }
+
+        function hideSpellTooltip(e) {
+            // TODO: Hide tooltip
+        }
+        
+        function hideCombatScreen() {
+            combatScreen.style.display = 'none';
+            gameContainer.style.display = 'flex';
+              // Hide spell bar when not in combat
+            const spellBar = document.getElementById('spellBar');
+            if (spellBar) {
+                spellBar.style.display = 'none';
+                spellBar.classList.remove('active');
+            }
+            
+            currentCombat = null;
+            selectedTile = null;
+            selectedSpell = null;
+        }
+          function updateCombatUI() {
+            if (!currentCombat) return;
+            
+            const playerUnit = currentCombat.participants.find(p => p.originalId === player?.id);
+            if (!playerUnit) return;
+            
+            const isMyTurn = currentCombat.participants[currentCombat.currentTurn] === playerUnit;
+            
+            // Update turn display
+            currentTurnDisplay.textContent = isMyTurn ? 'Your Turn' : `${currentCombat.participants[currentCombat.currentTurn].name}'s Turn`;
+            phaseIndicator.textContent = currentCombat.simultaneousMode ? 'Simultaneous Mode' : 'Turn-Based Mode';
+            
+            // Update current unit stats (show player stats)
+            unitName.textContent = playerUnit.name + (playerUnit.class ? ` (${playerUnit.class})` : '');
+            unitHP.textContent = `${playerUnit.hp}/${playerUnit.maxHp}`;
+            unitMP.textContent = `${playerUnit.movePoints}/${playerUnit.maxMovePoints}`;
+            unitAP.textContent = `${playerUnit.actionPoints}/${playerUnit.maxActionPoints}`;
+            
+            // Add mana display
+            const manaDisplay = document.getElementById('unitMana') || (() => {
+                const manaRow = document.createElement('div');
+                manaRow.className = 'stats-row';
+                manaRow.innerHTML = `
+                    <span>Mana:</span>
+                    <span id="unitMana">-/-</span>
+                `;
+                document.getElementById('currentUnitStats').appendChild(manaRow);
+                
+                const manaBar = document.createElement('div');
+                manaBar.className = 'mp-bar';
+                manaBar.innerHTML = '<div class="mp-fill" id="unitManaFill" style="width: 100%; background-color: #2196f3;"></div>';
+                document.getElementById('currentUnitStats').appendChild(manaBar);
+                
+                return document.getElementById('unitMana');
+            })();
+            
+            manaDisplay.textContent = `${playerUnit.mana || 0}/${playerUnit.maxMana || 0}`;
+            
+            // Update progress bars
+            const healthPercent = (playerUnit.hp / playerUnit.maxHp) * 100;
+            const mpPercent = (playerUnit.movePoints / playerUnit.maxMovePoints) * 100;
+            const apPercent = (playerUnit.actionPoints / playerUnit.maxActionPoints) * 100;
+            const manaPercent = playerUnit.maxMana ? (playerUnit.mana / playerUnit.maxMana) * 100 : 0;
+            
+            unitHealthFill.style.width = `${healthPercent}%`;
+            unitMPFill.style.width = `${mpPercent}%`;
+            unitAPFill.style.width = `${apPercent}%`;
+            
+            const manaFill = document.getElementById('unitManaFill');
+            if (manaFill) {
+                manaFill.style.width = `${manaPercent}%`;
+            }
+              // Update button states for simultaneous mode
+            const hasActionPoints = playerUnit.actionPoints > 0;
+            const hasMovePoints = playerUnit.movePoints > 0;
+            
+            endTurnBtn.disabled = !isMyTurn;
+            endTurnBtn.textContent = 'End Turn';
+            attackBtn.disabled = !isMyTurn || !hasActionPoints;
+            defendBtn.disabled = !isMyTurn || !hasActionPoints;
+            waitBtn.disabled = !isMyTurn;
+            
+            // Update spell bar
+            updateSpellBar();
+        }
+          function renderCombatGrid() {
+            if (!combatCtx || !currentCombat) return;
+            
+            const gridWidth = currentCombat.grid[0].length;
+            const gridHeight = currentCombat.grid.length;
+            const tileSize = Math.min(450 / gridWidth, 450 / gridHeight);
+            
+            // Resize canvas to fit grid
+            combatCanvas.width = gridWidth * tileSize;
+            combatCanvas.height = gridHeight * tileSize;
+            
+            combatCtx.clearRect(0, 0, combatCanvas.width, combatCanvas.height);
+            
+            // Draw grid tiles
+            for (let y = 0; y < gridHeight; y++) {
+                for (let x = 0; x < gridWidth; x++) {
+                    const tile = currentCombat.grid[y][x];
+                    const screenX = x * tileSize;
+                    const screenY = y * tileSize;
+                    
+                    // Tile background
+                    switch (tile.type) {
+                        case 'normal':
+                            combatCtx.fillStyle = '#2d5016';
+                            break;
+                        case 'obstacle':
+                            combatCtx.fillStyle = '#4a4a4a';
+                            break;
+                        case 'rough':
+                            combatCtx.fillStyle = '#5d4037';
+                            break;
+                        default:
+                            combatCtx.fillStyle = '#2d5016';
+                    }
+                    
+                    combatCtx.fillRect(screenX, screenY, tileSize, tileSize);
+                    
+                    // Tile border
+                    combatCtx.strokeStyle = '#333';
+                    combatCtx.lineWidth = 1;
+                    combatCtx.strokeRect(screenX, screenY, tileSize, tileSize);
+                    
+                    // Highlight selected tile
+                    if (selectedTile && selectedTile.x === x && selectedTile.y === y) {
+                        combatCtx.strokeStyle = '#ffeb3b';
+                        combatCtx.lineWidth = 3;
+                        combatCtx.strokeRect(screenX, screenY, tileSize, tileSize);
+                    }
+                }
+            }
+            
+            // Draw units
+            currentCombat.participants.forEach((unit, index) => {
+                if (unit.status !== 'alive') return;
+                
+                const screenX = unit.gridX * tileSize;
+                const screenY = unit.gridY * tileSize;
+                
+                // Unit background
+                combatCtx.fillStyle = unit.type === 'player' ? '#2196f3' : '#f44336';
+                combatCtx.fillRect(screenX + 5, screenY + 5, tileSize - 10, tileSize - 10);
+                
+                // Current turn highlight
+                if (index === currentCombat.currentTurn) {
+                    combatCtx.strokeStyle = '#ffeb3b';
+                    combatCtx.lineWidth = 3;
+                    combatCtx.strokeRect(screenX + 2, screenY + 2, tileSize - 4, tileSize - 4);
+                }
+                
+                // Unit name
+                combatCtx.fillStyle = 'white';
+                combatCtx.font = `${Math.max(8, Math.floor(tileSize / 6))}px Arial`;
+                combatCtx.textAlign = 'center';
+                combatCtx.fillText(unit.name.substr(0, 8), screenX + tileSize/2, screenY + tileSize/2 + 3);
+                
+                // Health bar
+                const healthPercent = unit.hp / unit.maxHp;
+                combatCtx.fillStyle = '#ff0000';
+                combatCtx.fillRect(screenX + 5, screenY + tileSize - 8, tileSize - 10, 3);
+                combatCtx.fillStyle = '#00ff00';
+                combatCtx.fillRect(screenX + 5, screenY + tileSize - 8, (tileSize - 10) * healthPercent, 3);
+            });
+        }        function handleCombatGridClick(e) {
+            if (!currentCombat) return;
+            
+            const gridWidth = currentCombat.grid[0].length;
+            const gridHeight = currentCombat.grid.length;
+            const tileSize = Math.min(450 / gridWidth, 450 / gridHeight);
+            
+            const rect = combatCanvas.getBoundingClientRect();
+            const x = Math.floor((e.clientX - rect.left) / tileSize);
+            const y = Math.floor((e.clientY - rect.top) / tileSize);
+            
+            if (x < 0 || x >= gridWidth || y < 0 || y >= gridHeight) return;
+            
+            selectedTile = { x, y };
+            
+            const currentUnit = currentCombat.participants.find(p => p.originalId === player?.id);
+            const isMyTurn = currentUnit && currentCombat.currentTurn === currentCombat.participants.indexOf(currentUnit);
+            
+            if (!isMyTurn) {
+                addCombatLog('Not your turn!');
+                renderCombatGrid();
+                return;
+            }
+
+            // Handle spell casting or movement
+            if (selectedSpell) {
+                if (selectedSpell === 'move') {
+                    // Movement
+                    socket.emit('combatMove', { x, y });
+                } else if (selectedSpell.id) {
+                    // Spell casting
+                    socket.emit('combatSpell', {
+                        spellId: selectedSpell.id,
+                        targetX: x,
+                        targetY: y
+                    });
+                }
+                
+                // Clear selection after use
+                selectedSpell = null;
+                document.querySelectorAll('.spell-slot').forEach(s => s.classList.remove('selected'));
+            } else {
+                // Default behavior - try to move
+                if (currentCombat.simultaneousMode) {
+                    socket.emit('combatMove', { x, y });
+                }
+            }
+            
+            renderCombatGrid();
+        }
+        
+        function handleCombatAttack() {
+            if (!currentCombat || !selectedTile) {
+                addCombatLog('Select a target first!');
+                return;
+            }
+            
+            // Find unit at selected tile
+            const target = currentCombat.participants.find(p => 
+                p.gridX === selectedTile.x && p.gridY === selectedTile.y && p.status === 'alive'
+            );
+            
+            if (!target) {
+                addCombatLog('No target at selected tile!');
+                return;
+            }
+            
+            socket.emit('combatAction', {
+                type: 'attack',
+                targetId: target.id,
+                cost: 1
+            });
+        }
+          function handleFleeCombat() {
+            const confirm = window.confirm('Are you sure you want to flee from combat?');
+            if (confirm) {
+                socket.emit('combatFlee');
+            }
+        }
+        
+        function addCombatLog(message) {
+            const logEntry = document.createElement('div');
+            logEntry.textContent = message;
+            logEntry.style.margin = '2px 0';
+            combatLogDisplay.appendChild(logEntry);
+            combatLogDisplay.scrollTop = combatLogDisplay.scrollHeight;
+        }
+        
+        // Canvas click event
+        setTimeout(() => {
+            const canvas = document.getElementById('gameCanvas');
+            if (canvas) {
+                canvas.addEventListener('click', handleCanvasClick);
+            }
+        }, 1000);
+        
+        console.log('🚀 WORKING MMORPG Client Ready!');
+        console.log('💡 This version should show enemies immediately!');
+    </script>
+</body>
+</html>

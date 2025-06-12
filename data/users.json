@@ -1,0 +1,211 @@
+{
+  "users": [
+    {
+      "login": "admin",
+      "password": "$2b$12$0w1lJBw06/eCaCW6G5Ey8ulEveziXsOTKZWbwUY0uxnXQ8PI7qyCW",
+      "progress": {
+        "hp": 100,
+        "maxHp": 100,
+        "ap": 57,
+        "maxAp": 60,
+        "mp": 18,
+        "maxMp": 30,
+        "attackPower": 150,
+        "attackRange": 2,
+        "gold": 3356,
+        "overworldX": 105,
+        "overworldY": 103,
+        "mapId": "open_world",
+        "experience": 4845,
+        "triggerData": {
+          "enemyId": 1123,
+          "enemyName": "Lobo Alfa",
+          "damageDealt": 150,
+          "timestamp": 1749515729594
+        },
+        "lastSaved": 1749515729609,
+        "saveVersion": "2.0",
+        "statistics": {
+          "session": {
+            "loginTime": 1749515716051,
+            "lastSaveTime": 1749515729609,
+            "totalPlayTime": 0,
+            "sessionPlayTime": 13558
+          },
+          "combat": {
+            "battlesWon": 3,
+            "battlesLost": 0,
+            "totalDamageDealt": 0,
+            "totalDamageTaken": 0,
+            "enemiesDefeated": 3,
+            "pvpWins": 0,
+            "pvpLosses": 0,
+            "criticalHits": 0,
+            "spellsCast": 0
+          },
+          "exploration": {
+            "mapsVisited": {},
+            "areasDiscovered": 0,
+            "distanceTraveled": 0,
+            "secretsFound": 0,
+            "treasuresCollected": 0
+          },
+          "progression": {
+            "levelsGained": 0,
+            "experienceGained": 0,
+            "skillPointsEarned": 0,
+            "goldEarned": 0,
+            "itemsAcquired": 0,
+            "questsCompleted": 0
+          },
+          "achievements": {
+            "milestones": [],
+            "firstTimeAchievements": {}
+          }
+        },
+        "saveMetadata": {
+          "triggerType": "combatVictory",
+          "saveCount": 198,
+          "backupData": {
+            "hp": 100,
+            "maxHp": 100,
+            "ap": 57,
+            "maxAp": 60,
+            "mp": 18,
+            "maxMp": 30,
+            "attackPower": 150,
+            "attackRange": 2,
+            "gold": 3356,
+            "overworldX": 105,
+            "overworldY": 103,
+            "mapId": "open_world",
+            "experience": 4845,
+            "triggerData": {
+              "enemyId": 1120,
+              "enemyName": "Lobo Alfa",
+              "damageDealt": 150,
+              "timestamp": 1749515729593
+            },
+            "lastSaved": 1749515729605,
+            "saveVersion": "2.0"
+          }
+        }
+      },
+      "needsPasswordRehash": false,
+      "migratedAt": "2025-06-10T00:47:45.863Z",
+      "passwordMigrated": true,
+      "passwordMigratedAt": "2025-06-10T00:48:44.996Z",
+      "sessionToken": null,
+      "lastLogin": "2025-06-10T12:54:54.491Z"
+    },
+    {
+      "login": "admin1",
+      "password": "$2b$12$FNZurLRz76Mu.WSM4YPj7.p2CMIpKY1PGDUG.Yo51j1PZ2723hgnK",
+      "progress": {
+        "hp": 100,
+        "maxHp": 100,
+        "ap": 1,
+        "maxAp": 6,
+        "mp": 2,
+        "maxMp": 3,
+        "attackPower": 15,
+        "attackRange": 2,
+        "gold": 3388,
+        "overworldX": 99,
+        "overworldY": 100,
+        "mapId": "open_world",
+        "experience": 4901,
+        "triggerData": {
+          "enemyId": 1327,
+          "enemyName": "Mantícora Jovem",
+          "damageDealt": 15,
+          "timestamp": 1749515759005
+        },
+        "lastSaved": 1749515759010,
+        "saveVersion": "2.0",
+        "statistics": {
+          "session": {
+            "loginTime": 1749515736207,
+            "lastSaveTime": 1749515759010,
+            "totalPlayTime": 0,
+            "sessionPlayTime": 22803
+          },
+          "combat": {
+            "battlesWon": 1,
+            "battlesLost": 0,
+            "totalDamageDealt": 0,
+            "totalDamageTaken": 0,
+            "enemiesDefeated": 1,
+            "pvpWins": 0,
+            "pvpLosses": 0,
+            "criticalHits": 0,
+            "spellsCast": 0
+          },
+          "exploration": {
+            "mapsVisited": {},
+            "areasDiscovered": 0,
+            "distanceTraveled": 0,
+            "secretsFound": 0,
+            "treasuresCollected": 0
+          },
+          "progression": {
+            "levelsGained": 0,
+            "experienceGained": 0,
+            "skillPointsEarned": 0,
+            "goldEarned": 0,
+            "itemsAcquired": 0,
+            "questsCompleted": 0
+          },
+          "achievements": {
+            "milestones": [],
+            "firstTimeAchievements": {}
+          }
+        },
+        "saveMetadata": {
+          "triggerType": "combatVictory",
+          "saveCount": 156,
+          "backupData": {
+            "hp": 100,
+            "maxHp": 100,
+            "ap": 3,
+            "maxAp": 6,
+            "mp": 3,
+            "maxMp": 3,
+            "attackPower": 15,
+            "attackRange": 2,
+            "gold": 3372,
+            "overworldX": 104,
+            "overworldY": 101,
+            "mapId": "open_world",
+            "experience": 4873,
+            "triggerData": {
+              "enemyId": 1327,
+              "enemyName": "Mantícora Jovem",
+              "damageDealt": 15,
+              "timestamp": 1749515069024
+            },
+            "lastSaved": 1749515069039,
+            "saveVersion": "2.0"
+          }
+        }
+      },
+      "lastSaved": "2025-06-08T17:22:07.072Z",
+      "sessionToken": "22839422d1baf10c3cc982ee0a5cd16cc8d130f7fb2dbb7911c0d72cb5d0862b",
+      "needsPasswordRehash": false,
+      "migratedAt": "2025-06-10T00:47:45.863Z",
+      "passwordMigrated": true,
+      "passwordMigratedAt": "2025-06-10T00:48:45.209Z",
+      "lastLogin": "2025-06-10T13:15:54.334Z"
+    },
+    {
+      "login": "123",
+      "password": "$2b$12$6tDQNpe9oU2836wKkig1vewpx/VPAT34gNKM.3FNfqLC0dEhh1Wd2",
+      "progress": {},
+      "sessionToken": "1e19393df89503325d7dedc815a96d0a",
+      "needsPasswordRehash": false,
+      "migratedAt": "2025-06-10T00:47:45.863Z",
+      "passwordMigrated": true,
+      "passwordMigratedAt": "2025-06-10T00:48:45.423Z"
+    }
+  ]
+}
